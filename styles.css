@@ -114,8 +114,10 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 .nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 500;
   height: var(--nav-h);
+  padding-top: env(safe-area-inset-top);        /* ← isla dinámica */
   transition: background .35s var(--ease), backdrop-filter .35s, border-color .35s;
   border-bottom: 1px solid transparent;
+  background: transparent;
 }
 .nav.scrolled {
   background: rgba(7,7,15,.94);
@@ -493,7 +495,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   min-height: 92vh;
   display: flex;
   align-items: flex-end;
-  padding-top: var(--nav-h);
+  padding-top: calc(var(--nav-h) + env(safe-area-inset-top));   /* ← isla dinámica */
   overflow: hidden;
 }
 
@@ -565,21 +567,17 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 
 .hero__title {
   font-family: 'Bebas Neue', cursive;
-
-  line-height: .95;
-  letter-spacing: .02em;
+  font-size: clamp(2.5rem, 8vw, 6rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
   background: linear-gradient(135deg, #fff 20%, var(--gold) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: fadeUp .7s .2s ease both;
   margin-bottom: 1.2rem;
-  font-size: clamp(2.8rem, 9vw, 7rem); /* ← un poco más controlado */
-  line-height: 1.05;
   white-space: normal;
   word-break: break-word;
-  hyphens: auto;                     /* opcional, divide con guiones */
-  overflow-wrap: break-word;/* ← corta palabras si es necesario */
 }
 
 .hero__desc {
@@ -663,7 +661,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 }
 
 .catalog__header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;         /* ← reducido para móviles */
   display: flex;
   align-items: baseline;
   gap: 1rem;
@@ -694,7 +692,8 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;        /* ← menos espacio debajo */
+  margin-top: 1rem;
 }
 .filter-pill {
   background: rgba(255,255,255,.05);
@@ -726,6 +725,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 1.25rem;
+  margin-top: 0;                /* aseguramos que no haya margen extra */
 }
 
 /* ── Film Card ── */
@@ -934,7 +934,6 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   font-size: .8rem;
   letter-spacing: .08em;
   gap: .5rem;
-  font-size: 2rem;
   text-align: center;
   padding: 2rem;
 }
@@ -1151,7 +1150,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 }
 
 /* ══════════════════════════════════════════
-   RESPONSIVE
+   RESPONSIVE (mobile first improvements)
 ══════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .nav__links { display: none; }
@@ -1166,6 +1165,9 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   .catalog { padding: 2.5rem 1rem 4rem; }
   .film-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .75rem; }
   .modal__box { padding: 2rem 1.5rem 1.75rem; }
+  /* Reducir espacio entre encabezado de catálogo y grid en móvil */
+  .catalog__header { margin-bottom: 1rem; }
+  .filters-bar { margin-top: .5rem; margin-bottom: 1rem; }
 }
 
 @media (max-width: 480px) {
@@ -1174,4 +1176,5 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   .hero__btn { padding: .7rem 1.4rem; font-size: .78rem; }
   #toast-container { bottom: 1rem; right: 1rem; left: 1rem; }
   .toast-msg { max-width: 100%; }
+  .catalog { padding: 2rem 1rem 3rem; }
 }
