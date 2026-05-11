@@ -3,7 +3,7 @@
 /* ═════════════════════════════════════
    CONSTANTES DE API
 ═════════════════════════════════════ */
-const API_BASE  = 'http://localhost:8080/api';
+const API_BASE  = 'https://gloomy-stoppable-outscore.ngrok-free.dev/';
 const API_PELI  = `${API_BASE}/peliculas`;
 const API_USERS = `${API_BASE}/usuarios`;
 const API_FAVS  = `${API_BASE}/favoritos`;
