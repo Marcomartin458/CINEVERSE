@@ -26,6 +26,15 @@
   --r:           10px;
   --ease:        cubic-bezier(.4,0,.2,1);
   --spring:      cubic-bezier(.16,1,.3,1);
+
+  /* Colores de género */
+  --genre-accion:    #e03c3c;
+  --genre-comedia:   #f2c66d;
+  --genre-drama:     #7ea6f0;
+  --genre-fantasia:  #b381f0;
+  --genre-terror:    #f08b8b;
+  --genre-cf:        #6dd5c9;
+  --genre-aventura:  #f2b76d;
 }
 
 /* ── RESET ── */
@@ -114,7 +123,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 .nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 500;
   height: var(--nav-h);
-  padding-top: env(safe-area-inset-top);        /* ← isla dinámica */
+  padding-top: env(safe-area-inset-top);
   transition: background .35s var(--ease), backdrop-filter .35s, border-color .35s;
   border-bottom: 1px solid transparent;
   background: transparent;
@@ -198,6 +207,11 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 .nav__link:hover, .nav__link--dropdown:hover { color: var(--text); }
 .nav__link:hover::after { transform: scaleX(1); }
 
+/* Destacadas / Favoritas en navbar */
+.nav__link[data-filter="destacadas"],
+.nav__link[data-filter="favoritas"] { color: var(--gold); font-weight: 600; }
+.nav__link[data-filter="favoritas"] { color: var(--red); }
+
 /* Dropdown */
 .nav__item--dropdown {
   position: relative;
@@ -222,7 +236,9 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   box-shadow: 0 20px 60px rgba(0,0,0,.7);
 }
 .nav__dropdown-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   font-size: .8rem;
   letter-spacing: .05em;
   color: var(--text2);
@@ -471,6 +487,15 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   text-transform: uppercase;
   margin: 1rem 0 .4rem;
 }
+
+/* Destacadas / Favoritas en sidebar */
+.sidebar__link[data-filter="destacadas"],
+.sidebar__link[data-filter="favoritas"] {
+  color: var(--gold);
+  font-weight: 500;
+}
+.sidebar__link[data-filter="favoritas"] { color: var(--red); }
+
 .sidebar__link {
   display: flex;
   align-items: center;
@@ -487,6 +512,15 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   padding-left: 1rem;
 }
 
+/* Genre dot */
+.genre-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
 /* ══════════════════════════════════════════
    HERO
 ══════════════════════════════════════════ */
@@ -495,7 +529,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   min-height: 92vh;
   display: flex;
   align-items: flex-end;
-  padding-top: calc(var(--nav-h) + env(safe-area-inset-top));   /* ← isla dinámica */
+  padding-top: calc(var(--nav-h) + env(safe-area-inset-top));
   overflow: hidden;
 }
 
@@ -661,7 +695,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 }
 
 .catalog__header {
-  margin-bottom: 1.5rem;         /* ← reducido para móviles */
+  margin-bottom: 1.5rem;
   display: flex;
   align-items: baseline;
   gap: 1rem;
@@ -687,15 +721,23 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   letter-spacing: .08em;
 }
 
-/* ── Filter Pills ── */
+/* ── Filter Pills (scroll horizontal en móvil) ── */
 .filters-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: .5rem;
-  margin-bottom: 1.5rem;        /* ← menos espacio debajo */
+  margin-bottom: 1.5rem;
   margin-top: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 0.5rem;
 }
+.filters-bar::-webkit-scrollbar { display: none; }
+
 .filter-pill {
+  flex-shrink: 0;
   background: rgba(255,255,255,.05);
   border: 1px solid var(--border);
   color: var(--muted);
@@ -707,8 +749,9 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   border-radius: 40px;
   transition: all .25s var(--ease);
   backdrop-filter: blur(6px);
-  opacity: 1 !important;                /* ← siempre visible */
-  visibility: visible !important;  
+  white-space: nowrap;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 .filter-pill:hover {
   border-color: var(--gold-dim);
@@ -721,13 +764,39 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   color: var(--gold);
   box-shadow: 0 0 18px var(--gold-glow);
 }
+/* ══════════════════════════════════════════
+   FILTROS DESTACADAS / FAVORITAS (sin emoticonos)
+══════════════════════════════════════════ */
+.filter-pill[data-genero="destacadas"],
+.filter-pill[data-genero="favoritas"] {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+}
+.filter-pill[data-genero="favoritas"] {
+  color: var(--red);
+  border-color: rgba(224,60,60,.35);
+}
+
+/* Activo */
+.filter-pill[data-genero="destacadas"].active {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+  box-shadow: 0 0 18px var(--gold-glow);
+}
+.filter-pill[data-genero="favoritas"].active {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+  box-shadow: 0 0 18px var(--red-glow);
+}
 
 /* ── Film Grid ── */
 .film-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 1.25rem;
-  margin-top: 0;                /* aseguramos que no haya margen extra */
+  margin-top: 0;
 }
 
 /* ── Film Card ── */
@@ -1153,7 +1222,7 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 }
 
 /* ══════════════════════════════════════════
-   RESPONSIVE (mobile first improvements)
+   RESPONSIVE
 ══════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .nav__links { display: none; }
@@ -1168,7 +1237,6 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   .catalog { padding: 2.5rem 1rem 4rem; }
   .film-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .75rem; }
   .modal__box { padding: 2rem 1.5rem 1.75rem; }
-  /* Reducir espacio entre encabezado de catálogo y grid en móvil */
   .catalog__header { margin-bottom: 1rem; }
   .filters-bar { margin-top: .5rem; margin-bottom: 1rem; }
 }
