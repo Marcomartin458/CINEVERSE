@@ -17,6 +17,7 @@ let generoActivo      = 'todos';
 let destacadasIds     = JSON.parse(localStorage.getItem('cineverse_destacadas') || 'null');
 let currentUser       = null;
 let favoritosSet      = new Set();
+let peliculaDestacada = null;   // ← película que se está mostrando en el hero
 
 /* ═════════════════════════════════════
    HERO BACKDROPS
@@ -163,6 +164,17 @@ async function toggleFavorito(peliculaId) {
   } catch {
     showToast('Error al actualizar favoritos.', 'error');
   }
+}
+
+/* ═════════════════════════════════════
+   BOTÓN "MI LISTA" DEL HERO
+═════════════════════════════════════ */
+function agregarDestacadaAFavoritos() {
+  if (!peliculaDestacada) {
+    showToast('No hay película destacada en este momento.', 'error');
+    return;
+  }
+  toggleFavorito(peliculaDestacada.id);
 }
 
 /* ═════════════════════════════════════
@@ -449,10 +461,11 @@ function fillMarquee(peliculas) {
 }
 
 /* ═════════════════════════════════════
-   HERO
+   HERO  (actualiza también peliculaDestacada)
 ═════════════════════════════════════ */
 function updateHero(pelicula) {
   if (!pelicula) return;
+  peliculaDestacada = pelicula;   // ← guardamos la película actual del hero
   const $ = id => document.getElementById(id);
   const heroImg = getHeroBackdrop(pelicula);
   const bgImg = $('heroBgImg'), bgRgb = $('heroBgRgb');
@@ -872,6 +885,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     mostrarFormularioNuevaPelicula();
     document.querySelector('.catalog')?.scrollIntoView({ behavior:'smooth', block:'start' });
   });
+
+  // Botón "Mi lista" del hero
+  document.getElementById('btnMiLista')?.addEventListener('click', agregarDestacadaAFavoritos);
 
   let searchTid;
   document.getElementById('searchInput')?.addEventListener('input', e => {
