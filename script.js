@@ -4,7 +4,7 @@
    CONSTANTES DE API
    Ajusta API_BASE con la URL que te da ngrok (sin / al final)
 ═════════════════════════════════════ */
-const API_BASE  = 'https://cineverse-backend-qjbu.onrender.com/api'; // ← sin / al final
+const API_BASE = 'https://cineverse-backend-qjbu.onrender.com/api';// ← sin / al final
 const API_PELI  = `${API_BASE}/api/peliculas`;
 const API_USERS = `${API_BASE}/api/usuarios`;
 const API_FAVS  = `${API_BASE}/api/favoritos`;
