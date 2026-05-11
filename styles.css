@@ -47,6 +47,7 @@ body {
   font-weight: 300;
   min-height: 100vh;
   overflow-x: hidden;
+  
 }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
@@ -70,34 +71,32 @@ body::after {
 /* hidden */
 .hidden { display: none !important; }
 
-/* ══════════════════════════════════════════
-   CURSOR
-══════════════════════════════════════════ */
+/* ═══ CURSOR (SOLO ESCRITORIO) ═══ */
 @media (pointer: fine) {
   body { cursor: none; }
   a, button { cursor: none; }
-}
 
-#cursorDot {
-  position: fixed; z-index: 9998;
-  width: 6px; height: 6px;
-  background: var(--gold);
-  border-radius: 50%;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  transition: width .15s, height .15s, opacity .15s;
+  #cursorDot {
+    position: fixed; z-index: 9998;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: width .15s, height .15s, opacity .15s;
+  }
+  #cursorRing {
+    position: fixed; z-index: 9997;
+    width: 32px; height: 32px;
+    border: 1px solid var(--gold-dim);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: border-color .2s;
+  }
+  body.cursor-hover #cursorDot  { width: 10px; height: 10px; background: var(--gold); }
+  body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--gold); }
 }
-#cursorRing {
-  position: fixed; z-index: 9997;
-  width: 32px; height: 32px;
-  border: 1px solid var(--gold-dim);
-  border-radius: 50%;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  transition: border-color .2s;
-}
-body.cursor-hover #cursorDot  { width: 10px; height: 10px; background: var(--gold); }
-body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--gold); }
 
 /* ══════════════════════════════════════════
    CURTAIN TRANSITION
@@ -122,8 +121,8 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
 ══════════════════════════════════════════ */
 .nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-  height: var(--nav-h);
-  padding-top: env(safe-area-inset-top);
+  height: calc(var(--nav-h) + env(safe-area-inset-top, 0px)); /* ← altura total incluye la isla */
+  padding-top: env(safe-area-inset-top, 0px);                /* ← espacio extra para el contenido de la barra */
   transition: background .35s var(--ease), backdrop-filter .35s, border-color .35s;
   border-bottom: 1px solid transparent;
   background: transparent;
@@ -1248,4 +1247,32 @@ body.cursor-hover #cursorRing { width: 50px; height: 50px; border-color: var(--g
   #toast-container { bottom: 1rem; right: 1rem; left: 1rem; }
   .toast-msg { max-width: 100%; }
   .catalog { padding: 2rem 1rem 3rem; }
+}
+/* ── OCULTAR CURSOR EN MÓVIL (SIN AFECTAR ESCRITORIO) ── */
+@media (hover: none), (pointer: coarse) {
+  #cursorDot,
+  #cursorRing {
+    display: none !important;
+  }
+  body {
+    cursor: auto;
+  }
+  a,
+  button {
+    cursor: auto;
+  }
+}
+
+/* ── AJUSTES MÓVIL PARA LA ISLA DINÁMICA ── */
+@media (max-width: 767px) {
+  .nav {
+    height: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  body {
+    padding-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  }
+  .hero {
+    padding-top: 0;
+  }
 }
