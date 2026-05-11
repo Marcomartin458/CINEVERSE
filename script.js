@@ -2,11 +2,12 @@
 
 /* ═════════════════════════════════════
    CONSTANTES DE API
+   Ajusta API_BASE con la URL que te da ngrok (sin / al final)
 ═════════════════════════════════════ */
-const API_BASE  = 'https://gloomy-stoppable-outscore.ngrok-free.dev';
-const API_PELI  = `${API_BASE}/peliculas`;
-const API_USERS = `${API_BASE}/usuarios`;
-const API_FAVS  = `${API_BASE}/favoritos`;
+const API_BASE  = 'https://gloomy-stoppable-outscore.ngrok-free.dev'; // ← sin / al final
+const API_PELI  = `${API_BASE}/api/peliculas`;
+const API_USERS = `${API_BASE}/api/usuarios`;
+const API_FAVS  = `${API_BASE}/api/favoritos`;
 
 /* ═════════════════════════════════════
    ESTADO GLOBAL
@@ -89,12 +90,12 @@ function clearSession() {
 function isLoggedIn() { return currentUser !== null; }
 
 /* ═════════════════════════════════════
-   AUTH — API
+   AUTH — API (con header para ngrok)
 ═════════════════════════════════════ */
 async function apiLogin(email, password) {
   const res = await fetch(`${API_USERS}/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
     body: JSON.stringify({ email, password })
   });
   if (!res.ok) {
@@ -107,7 +108,7 @@ async function apiLogin(email, password) {
 async function apiRegistro(nombre, email, password) {
   const res = await fetch(`${API_USERS}/registro`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
     body: JSON.stringify({ nombre, email, password })
   });
   if (!res.ok) {
@@ -123,7 +124,9 @@ async function apiRegistro(nombre, email, password) {
 async function cargarFavoritosDesdeAPI() {
   if (!isLoggedIn()) { favoritosSet.clear(); return; }
   try {
-    const res = await fetch(`${API_FAVS}/usuario/${currentUser.id}`);
+    const res = await fetch(`${API_FAVS}/usuario/${currentUser.id}`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
     if (!res.ok) return;
     const lista = await res.json();
     favoritosSet = new Set(lista.map(f => f.peliculaId));
@@ -141,13 +144,16 @@ async function toggleFavorito(peliculaId) {
   const esFav = favoritosSet.has(peliculaId);
   try {
     if (esFav) {
-      const res = await fetch(`${API_FAVS}/${currentUser.id}/${peliculaId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_FAVS}/${currentUser.id}/${peliculaId}`, {
+        method: 'DELETE',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
       if (!res.ok && res.status !== 404) throw new Error();
       favoritosSet.delete(peliculaId);
     } else {
       const res = await fetch(API_FAVS, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify({ usuarioId: currentUser.id, peliculaId })
       });
       if (!res.ok && res.status !== 409) throw new Error();
@@ -481,7 +487,12 @@ function mostrarSkeletons(n = 8) {
 ═════════════════════════════════════ */
 function esc(str) {
   if (str == null) return '';
-  return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 /* ═════════════════════════════════════
@@ -565,7 +576,7 @@ document.addEventListener('click', e => {
 });
 
 /* ═════════════════════════════════════
-   EDITAR
+   EDITAR (con header ngrok)
 ═════════════════════════════════════ */
 function editarPelicula(id) {
   if (!isLoggedIn()) { showToast('Inicia sesión para editar películas.', 'error'); abrirModal('login'); return; }
@@ -615,7 +626,8 @@ async function guardarEdicion(id) {
   if (!titulo || !director || !genero) { showToast('Título, director y género son obligatorios.', 'error'); return; }
   try {
     const res = await fetch(`${API_PELI}/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
       body: JSON.stringify({ ...pelicula, titulo, director, genero, descripcion, imagen })
     });
     if (!res.ok) throw new Error();
@@ -632,7 +644,10 @@ async function borrarPelicula(id) {
   const pelicula = todasLasPeliculas.find(p => p.id === id); if (!pelicula) return;
   if (!confirm(`¿Eliminar "${pelicula.titulo}" de forma permanente?\nEsta acción no se puede deshacer.`)) return;
   try {
-    const res = await fetch(`${API_PELI}/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_PELI}/${id}`, {
+      method: 'DELETE',
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
     if (!res.ok) throw new Error();
     showToast(`"${pelicula.titulo}" eliminada.`, 'success');
     cargarPeliculas();
@@ -685,7 +700,8 @@ async function guardarNuevaPelicula() {
   if (!titulo || !director || !genero) { showToast('Título, director y género son obligatorios.', 'error'); return; }
   try {
     const res = await fetch(API_PELI, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
       body: JSON.stringify({ titulo, director, genero, descripcion, imagen })
     });
     if (!res.ok) throw new Error();
@@ -761,12 +777,14 @@ function curtainTransition(callback) {
 }
 
 /* ═════════════════════════════════════
-   CARGA DE PELÍCULAS
+   CARGA DE PELÍCULAS (con header ngrok)
 ═════════════════════════════════════ */
 async function cargarPeliculas() {
   mostrarSkeletons();
   try {
-    const res = await fetch(API_PELI);
+    const res = await fetch(API_PELI, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     todasLasPeliculas = await res.json();
     if (!destacadasIds || !Array.isArray(destacadasIds)) {
