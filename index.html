@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cineverse — Tu universo de películas</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<!-- ══ CURSOR PERSONALIZADO ══ -->
+<div id="cursorDot"  aria-hidden="true"></div>
+<div id="cursorRing" aria-hidden="true"></div>
+
+<!-- ══ CURTAIN TRANSITION ══ -->
+<div id="curtain" aria-hidden="true"></div>
+
+<!-- ══ NAVBAR ══ -->
+<nav class="nav" id="mainNav" role="navigation" aria-label="Navegación principal">
+  <div class="nav__inner">
+
+    <!-- Botón menú (sidebar) -->
+    <button class="nav__menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
+      <span></span><span></span><span></span>
+    </button>
+
+    <!-- Logo -->
+    <a class="nav__logo" href="#" aria-label="Cineverse — inicio">
+      <span class="nav__logo-text">CINE<em>VERSE</em></span>
+    </a>
+
+    <!-- Links desktop -->
+    <ul class="nav__links" role="list">
+      <li><a class="nav__link" href="#" data-filter="todos">Catálogo</a></li>
+      <li class="nav__item--dropdown">
+        <button class="nav__link nav__link--dropdown" aria-haspopup="true" aria-expanded="false">
+          Géneros <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <ul class="nav__dropdown" role="menu">
+          <li><a class="nav__dropdown-item" href="#" data-genero="ACCION"         role="menuitem">⚡ Acción</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="COMEDIA"        role="menuitem">😄 Comedia</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="DRAMA"          role="menuitem">🎭 Drama</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="FANTASIA"       role="menuitem">🧙 Fantasía</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="TERROR"         role="menuitem">👻 Terror</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="CIENCIA_FICCION" role="menuitem">🚀 Ciencia Ficción</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="AVENTURA"       role="menuitem">🗺️ Aventura</a></li>
+        </ul>
+      </li>
+      <li><a class="nav__link" href="#" data-filter="destacadas">Destacadas</a></li>
+      <li><a class="nav__link" href="#" data-filter="favoritas">Favoritas</a></li>
+    </ul>
+
+    <!-- Barra derecha: búsqueda + usuario -->
+    <div class="nav__right">
+      <!-- Search desktop -->
+      <div class="nav__search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="searchInput" type="search" placeholder="Buscar…" aria-label="Buscar películas" autocomplete="off">
+      </div>
+      <!-- Search toggle móvil -->
+      <button class="nav__icon-btn" id="searchBtnMobile" aria-label="Buscar" aria-expanded="false" aria-controls="searchMobileBar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <!-- Área usuario -->
+      <div id="navUser"></div>
+    </div>
+
+  </div>
+
+  <!-- Barra de búsqueda móvil deslizante -->
+  <div id="searchMobileBar" class="nav__search-mobile" aria-hidden="true" role="search">
+    <input id="searchInputMobile" type="search" placeholder="Buscar película…" aria-label="Buscar">
+    <button id="searchMobileClose" aria-label="Cerrar búsqueda">✕</button>
+  </div>
+</nav>
+
+<!-- ══ SIDEBAR ══ -->
+<aside id="sidebar" class="sidebar" aria-label="Menú lateral" aria-hidden="true">
+  <div class="sidebar__header">
+    <span class="sidebar__title">MENÚ</span>
+    <button id="sidebarClose" class="sidebar__close" aria-label="Cerrar menú">✕</button>
+  </div>
+
+  <!-- Zona usuario (renderizada por JS) -->
+  <div id="sidebarUserArea" class="sidebar__user-area"></div>
+
+  <nav class="sidebar__nav" aria-label="Menú lateral">
+    <p class="sidebar__section-label">Catálogo</p>
+    <ul role="list">
+      <li><a class="sidebar__link" href="#" data-filter="todos">🎬 Todas las películas</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="destacadas">⭐ Destacadas</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="favoritas">❤️ Mis favoritas</a></li>
+    </ul>
+    <p class="sidebar__section-label">Géneros</p>
+    <ul role="list">
+      <li><a class="sidebar__link" href="#" data-filter="ACCION">⚡ Acción</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="COMEDIA">😄 Comedia</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="DRAMA">🎭 Drama</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="FANTASIA">🧙 Fantasía</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="TERROR">👻 Terror</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="CIENCIA_FICCION">🚀 Ciencia Ficción</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="AVENTURA">🗺️ Aventura</a></li>
+    </ul>
+    <p class="sidebar__section-label">Gestión</p>
+    <ul role="list">
+      <li><a class="sidebar__link" href="#" id="btnAgregarPelicula">➕ Añadir película</a></li>
+    </ul>
+  </nav>
+</aside>
+<div id="sidebarBackdrop" class="sidebar__backdrop" aria-hidden="true"></div>
+
+<!-- ══ HERO ══ -->
+<section class="hero" aria-label="Película destacada">
+  <!-- Capas de fondo -->
+  <div class="hero__bg-img"  id="heroBgImg"  aria-hidden="true"></div>
+  <div class="hero__bg-rgb"  id="heroBgRgb"  aria-hidden="true"></div>
+  <div class="hero__bg-grad"                 aria-hidden="true"></div>
+  <div class="hero__scanlines"               aria-hidden="true"></div>
+
+  <div class="hero__content">
+    <p class="hero__eyebrow">— DESTACADA DE HOY</p>
+    <p class="hero__meta">
+      <span class="hero__genre" id="heroGenre">AVENTURA</span>
+      <span class="hero__sep" aria-hidden="true">·</span>
+      <span id="heroDirector">Dir. —</span>
+    </p>
+    <h1 class="hero__title" id="heroTitulo" data-text="Cineverse">Cineverse</h1>
+    <p class="hero__desc" id="heroDescripcion">Cargando…</p>
+    <div class="hero__actions">
+      <button class="hero__btn hero__btn--play" id="heroPlayBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        Ver ahora
+      </button>
+      <button class="hero__btn hero__btn--list">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Mi lista
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ══ MARQUEE ══ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track" id="marqueeTrack"></div>
+</div>
+
+<!-- ══ CATÁLOGO ══ -->
+<main class="catalog" id="catalog">
+  <div class="catalog__header">
+    <p class="catalog__eyebrow">BIBLIOTECA</p>
+    <h2 class="catalog__title">Catálogo</h2>
+    <span class="catalog__count" id="catalogCount">— títulos</span>
+  </div>
+
+  <!-- Pills de filtro rápido -->
+  <div class="filters-bar" role="toolbar" aria-label="Filtrar por género">
+    <button class="filter-pill active" data-genero="todos"          aria-pressed="true">Todos</button>
+    <button class="filter-pill"        data-genero="ACCION"         aria-pressed="false">Acción</button>
+    <button class="filter-pill"        data-genero="COMEDIA"        aria-pressed="false">Comedia</button>
+    <button class="filter-pill"        data-genero="DRAMA"          aria-pressed="false">Drama</button>
+    <button class="filter-pill"        data-genero="FANTASIA"       aria-pressed="false">Fantasía</button>
+    <button class="filter-pill"        data-genero="TERROR"         aria-pressed="false">Terror</button>
+    <button class="filter-pill"        data-genero="CIENCIA_FICCION" aria-pressed="false">Ciencia Ficción</button>
+    <button class="filter-pill"        data-genero="AVENTURA"       aria-pressed="false">Aventura</button>
+    <button class="filter-pill"        data-genero="destacadas"     aria-pressed="false">⭐ Destacadas</button>
+    <button class="filter-pill"        data-genero="favoritas"      aria-pressed="false">❤️ Favoritas</button>
+  </div>
+
+  <!-- Grid de películas (JS pinta aquí) -->
+  <div class="film-grid" id="contenedorPeliculas" role="list" aria-live="polite" aria-label="Listado de películas"></div>
+</main>
+
+<!-- ══ FOOTER ══ -->
+<footer class="footer">
+  <p class="footer__logo">CINEVERSE</p>
+  <p class="footer__copy">© 2025 Cineverse · Todos los derechos reservados</p>
+</footer>
+
+<!-- ══ MODAL AUTH ══ -->
+<div id="authModal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalHeading">
+  <div id="modalOverlay" class="modal__overlay"></div>
+  <div class="modal__box">
+    <button id="modalClose" class="modal__close" aria-label="Cerrar">✕</button>
+
+    <!-- Tabs -->
+    <div class="modal__tabs" role="tablist">
+      <button class="modal__tab active" id="tabLogin" data-tab="login" role="tab" aria-selected="true" aria-controls="panelLogin">Iniciar sesión</button>
+      <button class="modal__tab"        id="tabReg"   data-tab="registro" role="tab" aria-selected="false" aria-controls="panelRegistro">Registrarse</button>
+    </div>
+
+    <!-- Panel Login -->
+    <div id="panelLogin" role="tabpanel" aria-labelledby="tabLogin">
+      <h2 id="modalHeading" class="modal__heading">Bienvenido de nuevo</h2>
+      <p class="modal__sub">Accede a tu cuenta Cineverse</p>
+      <div class="modal__field">
+        <label class="modal__label" for="loginEmail">Email</label>
+        <input class="modal__input" id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com">
+      </div>
+      <div class="modal__field">
+        <label class="modal__label" for="loginPassword">Contraseña</label>
+        <input class="modal__input" id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <p class="modal__error" id="loginError" role="alert"></p>
+      <button class="modal__submit" id="btnLogin">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        Entrar
+      </button>
+      <p class="modal__switch">¿Sin cuenta? <button class="modal__switch-btn" data-switch="registro">Regístrate aquí</button></p>
+    </div>
+
+    <!-- Panel Registro -->
+    <div id="panelRegistro" class="hidden" role="tabpanel" aria-labelledby="tabReg">
+      <h2 class="modal__heading">Crear cuenta</h2>
+      <p class="modal__sub">Únete a Cineverse gratis</p>
+      <div class="modal__field">
+        <label class="modal__label" for="regNombre">Nombre</label>
+        <input class="modal__input" id="regNombre" type="text" autocomplete="name" placeholder="Tu nombre">
+      </div>
+      <div class="modal__field">
+        <label class="modal__label" for="regEmail">Email</label>
+        <input class="modal__input" id="regEmail" type="email" autocomplete="email" placeholder="tu@email.com">
+      </div>
+      <div class="modal__field">
+        <label class="modal__label" for="regPassword">Contraseña</label>
+        <input class="modal__input" id="regPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+      </div>
+      <p class="modal__error" id="regError" role="alert"></p>
+      <button class="modal__submit" id="btnRegistro">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <line x1="19" y1="8" x2="19" y2="14"/>
+          <line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+        Registrarse
+      </button>
+      <p class="modal__switch">¿Ya tienes cuenta? <button class="modal__switch-btn" data-switch="login">Inicia sesión</button></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOASTS ══ -->
+<div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+<!-- JS -->
+<script src="script.js" defer></script>
+</body>
+</html>
