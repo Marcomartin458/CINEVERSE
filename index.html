@@ -11,7 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 
 <body>
@@ -45,13 +45,13 @@
           Géneros <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <ul class="nav__dropdown" role="menu">
-          <li><a class="nav__dropdown-item" href="#" data-genero="ACCION"         role="menuitem">⚡ Acción</a></li>
-          <li><a class="nav__dropdown-item" href="#" data-genero="COMEDIA"        role="menuitem">😄 Comedia</a></li>
-          <li><a class="nav__dropdown-item" href="#" data-genero="DRAMA"          role="menuitem">🎭 Drama</a></li>
-          <li><a class="nav__dropdown-item" href="#" data-genero="FANTASIA"       role="menuitem">🧙 Fantasía</a></li>
-          <li><a class="nav__dropdown-item" href="#" data-genero="TERROR"         role="menuitem">👻 Terror</a></li>
-          <li><a class="nav__dropdown-item" href="#" data-genero="CIENCIA_FICCION" role="menuitem">🚀 Ciencia Ficción</a></li>
-          <li><a class="nav__dropdown-item" href="#" data-genero="AVENTURA"       role="menuitem">🗺️ Aventura</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="ACCION"><span class="genre-dot" style="background-color: var(--genre-accion)"></span>Acción</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="COMEDIA"><span class="genre-dot" style="background-color: var(--genre-comedia)"></span>Comedia</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="DRAMA"><span class="genre-dot" style="background-color: var(--genre-drama)"></span>Drama</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="FANTASIA"><span class="genre-dot" style="background-color: var(--genre-fantasia)"></span>Fantasía</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="TERROR"><span class="genre-dot" style="background-color: var(--genre-terror)"></span>Terror</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="CIENCIA_FICCION"><span class="genre-dot" style="background-color: var(--genre-cf)"></span>Ciencia Ficción</a></li>
+          <li><a class="nav__dropdown-item" href="#" data-genero="AVENTURA"><span class="genre-dot" style="background-color: var(--genre-aventura)"></span>Aventura</a></li>
         </ul>
       </li>
       <li><a class="nav__link" href="#" data-filter="destacadas">Destacadas</a></li>
@@ -96,18 +96,18 @@
     <p class="sidebar__section-label">Catálogo</p>
     <ul role="list">
       <li><a class="sidebar__link" href="#" data-filter="todos">🎬 Todas las películas</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="destacadas">⭐ Destacadas</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="favoritas">❤️ Mis favoritas</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="destacadas">Destacadas</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="favoritas">Favoritas</a></li>
     </ul>
     <p class="sidebar__section-label">Géneros</p>
     <ul role="list">
-      <li><a class="sidebar__link" href="#" data-filter="ACCION">⚡ Acción</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="COMEDIA">😄 Comedia</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="DRAMA">🎭 Drama</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="FANTASIA">🧙 Fantasía</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="TERROR">👻 Terror</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="CIENCIA_FICCION">🚀 Ciencia Ficción</a></li>
-      <li><a class="sidebar__link" href="#" data-filter="AVENTURA">🗺️ Aventura</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="ACCION"><span class="genre-dot" style="background-color: var(--genre-accion)"></span>Acción</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="COMEDIA"><span class="genre-dot" style="background-color: var(--genre-comedia)"></span>Comedia</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="DRAMA"><span class="genre-dot" style="background-color: var(--genre-drama)"></span>Drama</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="FANTASIA"><span class="genre-dot" style="background-color: var(--genre-fantasia)"></span>Fantasía</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="TERROR"><span class="genre-dot" style="background-color: var(--genre-terror)"></span>Terror</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="CIENCIA_FICCION"><span class="genre-dot" style="background-color: var(--genre-cf)"></span>Ciencia Ficción</a></li>
+      <li><a class="sidebar__link" href="#" data-filter="AVENTURA"><span class="genre-dot" style="background-color: var(--genre-aventura)"></span>Aventura</a></li>
     </ul>
     <p class="sidebar__section-label">Gestión</p>
     <ul role="list">
@@ -163,13 +163,13 @@
   <!-- Pills de filtro rápido -->
   <div class="filters-bar" role="toolbar" aria-label="Filtrar por género">
     <button class="filter-pill active" data-genero="todos"          aria-pressed="true">Todos</button>
-    <button class="filter-pill"        data-genero="ACCION"         aria-pressed="false">Acción</button>
-    <button class="filter-pill"        data-genero="COMEDIA"        aria-pressed="false">Comedia</button>
-    <button class="filter-pill"        data-genero="DRAMA"          aria-pressed="false">Drama</button>
-    <button class="filter-pill"        data-genero="FANTASIA"       aria-pressed="false">Fantasía</button>
-    <button class="filter-pill"        data-genero="TERROR"         aria-pressed="false">Terror</button>
-    <button class="filter-pill"        data-genero="CIENCIA_FICCION" aria-pressed="false">Ciencia Ficción</button>
-    <button class="filter-pill"        data-genero="AVENTURA"       aria-pressed="false">Aventura</button>
+    <button class="filter-pill"        data-genero="ACCION"         aria-pressed="false"><span class="genre-dot" style="background-color: var(--genre-accion)"></span>Acción</button>
+    <button class="filter-pill"        data-genero="COMEDIA"        aria-pressed="false"><span class="genre-dot" style="background-color: var(--genre-comedia)"></span>Comedia</button>
+    <button class="filter-pill"        data-genero="DRAMA"          aria-pressed="false"><span class="genre-dot" style="background-color: var(--genre-drama)"></span>Drama</button>
+    <button class="filter-pill"        data-genero="FANTASIA"       aria-pressed="false"><span class="genre-dot" style="background-color: var(--genre-fantasia)"></span>Fantasía</button>
+    <button class="filter-pill"        data-genero="TERROR"         aria-pressed="false"><span class="genre-dot" style="background-color: var(--genre-terror)"></span>Terror</button>
+    <button class="filter-pill"        data-genero="CIENCIA_FICCION" aria-pressed="false"><span class="genre-dot" style="background-color: var(--genre-cf)"></span>Ciencia Ficción</button>
+    <button class="filter-pill"        data-genero="AVENTURA"       aria-pressed="false"><span class="genre-dot" style="background-color: var(--genre-aventura)"></span>Aventura</button>
     <button class="filter-pill"        data-genero="destacadas"     aria-pressed="false">⭐ Destacadas</button>
     <button class="filter-pill"        data-genero="favoritas"      aria-pressed="false">❤️ Favoritas</button>
   </div>
@@ -255,6 +255,6 @@
 <div id="toast-container" aria-live="polite" aria-atomic="false"></div>
 
 <!-- JS -->
-<script src="script.js" defer></script>
+<script src="script.js?v=3" defer></script>
 </body>
 </html>
