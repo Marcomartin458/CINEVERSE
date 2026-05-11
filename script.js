@@ -754,10 +754,6 @@ function initScrollAnimations() {
     scrollTrigger: { trigger: '.catalog', start: 'top 85%' },
     opacity: 0, y: 20, duration: 0.7, stagger: 0.12, ease: 'power3.out'
   });
-  gsap.from('.filter-pill', {
-    scrollTrigger: { trigger: '.filters-bar', start: 'top 90%' },
-    opacity: 0, x: -10, duration: 0.4, stagger: 0.06, ease: 'power2.out'
-  });
 }
 
 /* ═════════════════════════════════════
