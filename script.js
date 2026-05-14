@@ -476,7 +476,17 @@ function updateHero(pelicula) {
   const desc = $('heroDescripcion'); if (desc) desc.textContent = pelicula.descripcion || '';
   const genre = $('heroGenre'); if (genre) genre.textContent = (pelicula.genero ?? '—').replaceAll('_',' ');
   const director = $('heroDirector'); if (director) director.textContent = pelicula.director ?? '—';
-  $('heroPlayBtn')?.addEventListener('click', () => showToast(`Reproduciendo: ${pelicula.titulo}`, 'info'), { once: true });
+
+  // Botón "Ver ahora" redirige al link si existe
+  const playBtn = $('heroPlayBtn');
+  if (playBtn) {
+    playBtn.onclick = null;
+    if (pelicula.link) {
+      playBtn.onclick = () => window.open(pelicula.link, '_blank');
+    } else {
+      playBtn.onclick = () => showToast('No hay enlace disponible.', 'info');
+    }
+  }
 }
 
 /* ═════════════════════════════════════
@@ -509,7 +519,7 @@ function esc(str) {
 }
 
 /* ═════════════════════════════════════
-   RENDER CARDS
+   RENDER CARDS  (con enlace en el icono de play)
 ═════════════════════════════════════ */
 function renderPeliculas(peliculas) {
   const contenedor = document.getElementById('contenedorPeliculas');
@@ -540,13 +550,19 @@ function renderPeliculas(peliculas) {
     const isFav       = favoritosSet.has(p.id);
     const anio        = p.anio ? `<span class="film-card__year">${esc(String(p.anio))}</span>` : '';
     const actions     = adminActions.replaceAll('ID_PH', String(p.id));
+
+    // Construir el icono de play como enlace si hay link, si no como simple div
+    const playButton = p.link
+      ? `<a href="${esc(p.link)}" target="_blank" rel="noopener" class="film-card__play" aria-label="Reproducir ${safeTitulo}">${playIcon}</a>`
+      : `<div class="film-card__play" aria-hidden="true">${playIcon}</div>`;
+
     return `
     <article class="film-card" data-id="${esc(String(p.id))}" aria-label="${safeTitulo}">
       <div class="film-card__media">
         <span class="film-card__num" aria-hidden="true">№ ${String(i+1).padStart(2,'0')}</span>
         <img src="${esc(imagenUrl)}" alt="Póster de ${safeTitulo}" loading="lazy" class="film-card__img"
              onerror="this.src='${placeholder}';this.onerror=null;">
-        <div class="film-card__play" aria-hidden="true">${playIcon}</div>
+        ${playButton}
       </div>
       <div class="film-card__info">
         <div class="film-card__meta">
@@ -673,6 +689,7 @@ function editarPelicula(id) {
       </select>
       <textarea class="film-card__input film-card__textarea" id="editDescripcion_${id}" placeholder="Descripción">${esc(pelicula.descripcion)}</textarea>
       <input  class="film-card__input"  id="editImagen_${id}"      value="${esc(pelicula.imagen)}"      placeholder="URL imagen">
+      <input  class="film-card__input"  id="editLink_${id}"        value="${esc(pelicula.link)}"        placeholder="Enlace público (YouTube, etc.)">
       <div class="film-card__form-actions">
         <button class="film-card__btn film-card__btn--edit"   data-action="guardar-edicion"  data-id="${id}">✓ Guardar</button>
         <button class="film-card__btn film-card__btn--delete" data-action="cancelar-edicion" data-id="${id}">✕ Cancelar</button>
@@ -695,12 +712,13 @@ async function guardarEdicion(id) {
   const genero      = document.getElementById(`editGenero_${id}`)?.value;
   const descripcion = document.getElementById(`editDescripcion_${id}`)?.value.trim();
   const imagen      = document.getElementById(`editImagen_${id}`)?.value.trim();
+  const link        = document.getElementById(`editLink_${id}`)?.value.trim();
   if (!titulo || !director || !genero) { showToast('Título, director y género son obligatorios.', 'error'); return; }
   try {
     const res = await fetch(`${API_PELI}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ ...pelicula, titulo, director, genero, descripcion, imagen })
+      body: JSON.stringify({ ...pelicula, titulo, director, genero, descripcion, imagen, link })
     });
     if (!res.ok) throw new Error();
     showToast(`"${titulo}" actualizada.`, 'success');
@@ -709,7 +727,7 @@ async function guardarEdicion(id) {
 }
 
 /* ═════════════════════════════════════
-   AÑADIR
+   AÑADIR  (ahora incluye campo link)
 ═════════════════════════════════════ */
 function mostrarFormularioNuevaPelicula() {
   if (!isLoggedIn()) { showToast('Inicia sesión para añadir películas.', 'error'); abrirModal('login'); return; }
@@ -731,6 +749,7 @@ function mostrarFormularioNuevaPelicula() {
       </select>
       <textarea class="film-card__input film-card__textarea" id="nuevoDescripcion" placeholder="Descripción"></textarea>
       <input  class="film-card__input" id="nuevoImagen" placeholder="URL de la imagen">
+      <input  class="film-card__input" id="nuevoLink"   placeholder="Enlace público (YouTube, etc.)">
       <div class="film-card__form-actions">
         <button class="film-card__btn film-card__btn--edit"   id="btnGuardarNueva">✓ Guardar</button>
         <button class="film-card__btn film-card__btn--delete" id="btnCancelarNueva">✕ Cancelar</button>
@@ -751,12 +770,13 @@ async function guardarNuevaPelicula() {
   const genero      = document.getElementById('nuevoGenero')?.value;
   const descripcion = document.getElementById('nuevoDescripcion')?.value.trim();
   const imagen      = document.getElementById('nuevoImagen')?.value.trim();
+  const link        = document.getElementById('nuevoLink')?.value.trim();
   if (!titulo || !director || !genero) { showToast('Título, director y género son obligatorios.', 'error'); return; }
   try {
     const res = await fetch(API_PELI, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ titulo, director, genero, descripcion, imagen })
+      body: JSON.stringify({ titulo, director, genero, descripcion, imagen, link })
     });
     if (!res.ok) throw new Error();
     showToast(`"${titulo}" añadida correctamente.`, 'success');
