@@ -47,7 +47,6 @@ body {
   font-weight: 300;
   min-height: 100vh;
   overflow-x: hidden;
-  
 }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
@@ -121,8 +120,8 @@ body::after {
 ══════════════════════════════════════════ */
 .nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-  height: calc(var(--nav-h) + env(safe-area-inset-top, 0px)); /* ← altura total incluye la isla */
-  padding-top: env(safe-area-inset-top, 0px);                /* ← espacio extra para el contenido de la barra */
+  height: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   transition: background .35s var(--ease), backdrop-filter .35s, border-color .35s;
   border-bottom: 1px solid transparent;
   background: transparent;
@@ -206,15 +205,12 @@ body::after {
 .nav__link:hover, .nav__link--dropdown:hover { color: var(--text); }
 .nav__link:hover::after { transform: scaleX(1); }
 
-/* Destacadas / Favoritas en navbar */
 .nav__link[data-filter="destacadas"],
 .nav__link[data-filter="favoritas"] { color: var(--gold); font-weight: 600; }
 .nav__link[data-filter="favoritas"] { color: var(--red); }
 
 /* Dropdown */
-.nav__item--dropdown {
-  position: relative;
-}
+.nav__item--dropdown { position: relative; }
 .nav__item--dropdown:hover .nav__dropdown,
 .nav__item--dropdown:focus-within .nav__dropdown { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
@@ -384,13 +380,15 @@ body::after {
 
 /* ══════════════════════════════════════════
    SIDEBAR
+   FIX: fondo más claro con degradado sutil para dar profundidad
 ══════════════════════════════════════════ */
 .sidebar {
   position: fixed;
   top: 0; left: 0; bottom: 0;
   width: var(--sidebar-w);
-  background: rgba(7,7,15,.98);
-  border-right: 1px solid var(--border);
+  /* FIX: era rgba(7,7,15,.98) — casi negro puro sin detalle */
+  background: linear-gradient(160deg, rgba(18,18,34,.97) 0%, rgba(11,11,22,.98) 100%);
+  border-right: 1px solid rgba(200,169,110,.15);
   backdrop-filter: blur(30px);
   z-index: 600;
   display: flex;
@@ -416,8 +414,9 @@ body::after {
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(200,169,110,.12);
   flex-shrink: 0;
+  background: rgba(200,169,110,.04);
 }
 .sidebar__title {
   font-family: 'Bebas Neue', cursive;
@@ -433,7 +432,11 @@ body::after {
 }
 .sidebar__close:hover { color: var(--text); }
 
-.sidebar__user-area { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.sidebar__user-area {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+}
 
 .sidebar__user-info { display: flex; align-items: center; gap: .85rem; margin-bottom: 1rem; }
 .sidebar__avatar {
@@ -445,9 +448,10 @@ body::after {
   font-size: 1rem;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 0 18px var(--gold-glow);
 }
 .sidebar__user-name { font-weight: 500; font-size: .9rem; color: var(--text); }
-.sidebar__user-email { font-size: .75rem; color: var(--muted); margin-top: 1px; }
+.sidebar__user-email { font-size: .75rem; color: rgba(234,230,222,.65); margin-top: 1px; }
 
 .sidebar__logout {
   width: 100%;
@@ -482,12 +486,11 @@ body::after {
 .sidebar__section-label {
   font-size: .62rem;
   letter-spacing: .22em;
-  color: var(--gold-dim);
+  color: rgba(200,169,110,.75);
   text-transform: uppercase;
   margin: 1rem 0 .4rem;
 }
 
-/* Destacadas / Favoritas en sidebar */
 .sidebar__link[data-filter="destacadas"],
 .sidebar__link[data-filter="favoritas"] {
   color: var(--gold);
@@ -499,12 +502,13 @@ body::after {
   display: flex;
   align-items: center;
   gap: .6rem;
-  color: var(--text2);
+  color: rgba(234,230,222,.85);
   font-size: .84rem;
   padding: .55rem .75rem;
   border-radius: 8px;
   transition: background .2s, color .2s, padding-left .2s;
 }
+
 .sidebar__link:hover {
   background: rgba(200,169,110,.1);
   color: var(--text);
@@ -720,7 +724,7 @@ body::after {
   letter-spacing: .08em;
 }
 
-/* ── Filter Pills (scroll horizontal en móvil) ── */
+/* ── Filter Pills ── */
 .filters-bar {
   display: flex;
   flex-wrap: nowrap;
@@ -763,9 +767,7 @@ body::after {
   color: var(--gold);
   box-shadow: 0 0 18px var(--gold-glow);
 }
-/* ══════════════════════════════════════════
-   FILTROS DESTACADAS / FAVORITAS (sin emoticonos)
-══════════════════════════════════════════ */
+
 .filter-pill[data-genero="destacadas"],
 .filter-pill[data-genero="favoritas"] {
   color: var(--gold);
@@ -775,8 +777,6 @@ body::after {
   color: var(--red);
   border-color: rgba(224,60,60,.35);
 }
-
-/* Activo */
 .filter-pill[data-genero="destacadas"].active {
   background: var(--gold);
   color: #000;
@@ -813,7 +813,6 @@ body::after {
   border-color: var(--gold-dim);
 }
 
-/* Touch reveal */
 .film-card.touch-active .film-card__info { transform: translateY(0); opacity: 1; }
 .film-card.touch-active .film-card__play { opacity: 1; transform: translate(-50%,-50%) scale(1); }
 
@@ -1046,22 +1045,27 @@ body::after {
 
 /* ══════════════════════════════════════════
    MODAL AUTH
+   FIX CRÍTICO: scope de .modal → #authModal para no
+   colisionar con la clase .modal de Bootstrap.
+   Antes, Bootstrap heredaba opacity:0 y pointer-events:none
+   de esta regla, por eso los modales Bootstrap solo mostraban
+   el backdrop oscuro pero el contenido era invisible.
 ══════════════════════════════════════════ */
-.modal {
-  position: fixed; inset: 0; z-index: 1000;
+#authModal {
+  position: fixed; inset: 0; z-index: 10100;
   display: flex; align-items: center; justify-content: center;
   opacity: 0;
   pointer-events: none;
   transition: opacity .3s;
 }
-.modal.open { opacity: 1; pointer-events: auto; }
+#authModal.open { opacity: 1; pointer-events: auto; }
 
-.modal__overlay {
+#authModal .modal__overlay {
   position: absolute; inset: 0;
   background: rgba(0,0,0,.75);
   backdrop-filter: blur(10px);
 }
-.modal__box {
+#authModal .modal__box {
   position: relative; z-index: 1;
   background: rgba(11,11,20,.98);
   border: 1px solid var(--border2);
@@ -1072,22 +1076,22 @@ body::after {
   transform: translateY(20px) scale(.97);
   transition: transform .35s var(--spring);
 }
-.modal.open .modal__box { transform: translateY(0) scale(1); }
+#authModal.open .modal__box { transform: translateY(0) scale(1); }
 
-.modal__close {
+#authModal .modal__close {
   position: absolute; top: 1rem; right: 1rem;
   color: var(--muted); font-size: 1.1rem; padding: .3rem .5rem;
   border-radius: 6px; transition: color .2s, background .2s;
 }
-.modal__close:hover { color: var(--text); background: rgba(255,255,255,.07); }
+#authModal .modal__close:hover { color: var(--text); background: rgba(255,255,255,.07); }
 
-.modal__tabs {
+#authModal .modal__tabs {
   display: flex;
   border-bottom: 1px solid var(--border);
   margin-bottom: 1.75rem;
   gap: 0;
 }
-.modal__tab {
+#authModal .modal__tab {
   flex: 1;
   padding: .6rem;
   font-size: .78rem;
@@ -1099,20 +1103,20 @@ body::after {
   margin-bottom: -1px;
   transition: color .2s, border-color .2s;
 }
-.modal__tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+#authModal .modal__tab.active { color: var(--gold); border-bottom-color: var(--gold); }
 
-.modal__heading {
+#authModal .modal__heading {
   font-family: 'Bebas Neue', cursive;
   font-size: 1.8rem;
   letter-spacing: .08em;
   color: var(--text);
   margin-bottom: .25rem;
 }
-.modal__sub { font-size: .8rem; color: var(--muted); margin-bottom: 1.5rem; }
+#authModal .modal__sub { font-size: .8rem; color: var(--muted); margin-bottom: 1.5rem; }
 
-.modal__field { margin-bottom: 1rem; }
-.modal__label { display: block; font-size: .72rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: .4rem; }
-.modal__input {
+#authModal .modal__field { margin-bottom: 1rem; }
+#authModal .modal__label { display: block; font-size: .72rem; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: .4rem; }
+#authModal .modal__input {
   width: 100%;
   background: rgba(255,255,255,.05);
   border: 1px solid var(--border2);
@@ -1124,22 +1128,22 @@ body::after {
   outline: none;
   transition: border-color .2s, background .2s, box-shadow .2s;
 }
-.modal__input:focus {
+#authModal .modal__input:focus {
   border-color: var(--gold);
   background: rgba(200,169,110,.04);
   box-shadow: 0 0 0 3px var(--gold-glow);
 }
-.modal__input.error { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-glow); }
+#authModal .modal__input.error { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-glow); }
 
-.modal__error {
+#authModal .modal__error {
   font-size: .78rem;
   color: var(--red);
   min-height: 1.1em;
   margin-bottom: .75rem;
 }
 
+/* modal__submit — usado también por el Bootstrap modal de nueva película */
 .modal__submit {
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1154,21 +1158,27 @@ body::after {
   border-radius: 8px;
   margin-bottom: 1.25rem;
   transition: background .2s, transform .2s, box-shadow .2s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 .modal__submit:hover { background: #dbbe7e; transform: translateY(-1px); box-shadow: 0 6px 20px var(--gold-glow); }
 .modal__submit:disabled { opacity: .55; pointer-events: none; }
 
-.modal__switch { font-size: .78rem; color: var(--muted); text-align: center; }
-.modal__switch-btn {
+/* Aplicar width:100% solo dentro del auth modal */
+#authModal .modal__submit { width: 100%; }
+
+#authModal .modal__switch { font-size: .78rem; color: var(--muted); text-align: center; }
+#authModal .modal__switch-btn {
   color: var(--gold);
   font-size: inherit;
   text-decoration: underline;
   transition: color .2s;
 }
-.modal__switch-btn:hover { color: #dbbe7e; }
+#authModal .modal__switch-btn:hover { color: #dbbe7e; }
 
 /* ══════════════════════════════════════════
-   TOAST
+   TOAST (custom, para el sistema propio)
 ══════════════════════════════════════════ */
 #toast-container {
   position: fixed; bottom: 2rem; right: 2rem; z-index: 9000;
@@ -1235,7 +1245,7 @@ body::after {
   .hero__content { padding-bottom: 3.5rem; }
   .catalog { padding: 2.5rem 1rem 4rem; }
   .film-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .75rem; }
-  .modal__box { padding: 2rem 1.5rem 1.75rem; }
+  #authModal .modal__box { padding: 2rem 1.5rem 1.75rem; }
   .catalog__header { margin-bottom: 1rem; }
   .filters-bar { margin-top: .5rem; margin-bottom: 1rem; }
 }
@@ -1248,19 +1258,15 @@ body::after {
   .toast-msg { max-width: 100%; }
   .catalog { padding: 2rem 1rem 3rem; }
 }
-/* ── OCULTAR CURSOR EN MÓVIL (SIN AFECTAR ESCRITORIO) ── */
+
+/* ── OCULTAR CURSOR EN MÓVIL ── */
 @media (hover: none), (pointer: coarse) {
   #cursorDot,
   #cursorRing {
     display: none !important;
   }
-  body {
-    cursor: auto;
-  }
-  a,
-  button {
-    cursor: auto;
-  }
+  body { cursor: auto; }
+  a, button { cursor: auto; }
 }
 
 /* ── AJUSTES MÓVIL PARA LA ISLA DINÁMICA ── */
@@ -1272,10 +1278,9 @@ body::after {
   body {
     padding-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
   }
-  .hero {
-    padding-top: 0;
-  }
+  .hero { padding-top: 0; }
 }
+
 /* ══════════════════════════════════════════
    MODAL BOOTSTRAP (asegurar que queda por encima)
 ══════════════════════════════════════════ */
@@ -1285,3 +1290,41 @@ body::after {
 #confirmDeleteModal {
   z-index: 10010 !important;
 }
+
+/* ====== ESTILO MODAL ELIMINAR (evitar blanco por estilos Bootstrap) ====== */
+#confirmDeleteModal .modal-content,
+#confirmDeleteModal .modal-header,
+#confirmDeleteModal .modal-body,
+#confirmDeleteModal .modal-footer {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+#confirmDeleteModal .modal-title {
+  color: var(--text) !important;
+}
+
+#confirmDeleteModal .btn-close {
+  filter: brightness(0) invert(1) opacity(.6);
+}
+
+#confirmDeleteModal .btn-close:hover {
+  opacity: 1;
+}
+
+#confirmDeleteModal .modal-header,
+#confirmDeleteModal .modal-footer {
+  border-color: var(--border) !important;
+}
+
+#confirmDeleteModal .btn-danger {
+  background: var(--red) !important;
+  border-color: rgba(224,60,60,.65) !important;
+  color: #fff !important;
+}
+
+#confirmDeleteModal .btn-danger:hover {
+  background: #f04a4a !important;
+  border-color: rgba(224,60,60,.9) !important;
+}
+
