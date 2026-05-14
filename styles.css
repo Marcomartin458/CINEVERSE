@@ -1276,3 +1276,12 @@ body::after {
     padding-top: 0;
   }
 }
+/* ══════════════════════════════════════════
+   MODAL BOOTSTRAP (asegurar que queda por encima)
+══════════════════════════════════════════ */
+.modal-backdrop {
+  z-index: 10000 !important;
+}
+#confirmDeleteModal {
+  z-index: 10010 !important;
+}
