@@ -79,26 +79,26 @@ function getHeroBackdrop(pelicula) {
 }
 
 /* ═════════════════════════════════════
-   AUTH — sesión localStorage
+   AUTH — sesión sessionStorage (persiste en la pestaña, se pierde al cerrar)
 ═════════════════════════════════════ */
 function restoreSession() {
-  const id     = localStorage.getItem('cv_userId');
-  const nombre = localStorage.getItem('cv_userName');
-  const email  = localStorage.getItem('cv_userEmail');
+  const id     = sessionStorage.getItem('cv_userId');
+  const nombre = sessionStorage.getItem('cv_userName');
+  const email  = sessionStorage.getItem('cv_userEmail');
   if (id && nombre) currentUser = { id: parseInt(id, 10), nombre, email: email || '' };
 }
 function saveSession(usuario) {
   currentUser = { id: usuario.id, nombre: usuario.nombre, email: usuario.email || '' };
-  localStorage.setItem('cv_userId',    String(usuario.id));
-  localStorage.setItem('cv_userName',  usuario.nombre);
-  localStorage.setItem('cv_userEmail', usuario.email || '');
+  sessionStorage.setItem('cv_userId',    String(usuario.id));
+  sessionStorage.setItem('cv_userName',  usuario.nombre);
+  sessionStorage.setItem('cv_userEmail', usuario.email || '');
 }
 function clearSession() {
   currentUser = null;
   favoritosSet.clear();
-  localStorage.removeItem('cv_userId');
-  localStorage.removeItem('cv_userName');
-  localStorage.removeItem('cv_userEmail');
+  sessionStorage.removeItem('cv_userId');
+  sessionStorage.removeItem('cv_userName');
+  sessionStorage.removeItem('cv_userEmail');
 }
 function isLoggedIn() { return currentUser !== null; }
 
