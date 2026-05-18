@@ -9,6 +9,17 @@ const API_USERS = `${API_BASE}/api/usuarios`;
 const API_FAVS  = `${API_BASE}/api/favoritos`;
 
 /* ═════════════════════════════════════
+   ADMIN
+   Solo la cuenta con este email tiene permisos
+   para añadir, editar y borrar películas.
+   El resto de usuarios solo pueden ver y guardar favoritos.
+═════════════════════════════════════ */
+const ADMIN_EMAIL = 'marco@gmail.com';
+function isAdmin() {
+  return currentUser?.email?.toLowerCase().trim() === ADMIN_EMAIL;
+}
+
+/* ═════════════════════════════════════
    ESTADO GLOBAL
 ═════════════════════════════════════ */
 let todasLasPeliculas = [];
@@ -18,11 +29,7 @@ let currentUser       = null;
 let favoritosSet      = new Set();
 let peliculaDestacada = null;
 
-/* ─── HERO ROTATION ─────────────────
-   heroQueue  : lista aleatoria de películas que se muestran en el hero
-   heroIndex  : índice actual en heroQueue
-   heroIntervalId : referencia al setInterval para poder cancelarlo
-──────────────────────────────────── */
+/* ─── HERO ROTATION ───────────────── */
 let heroIndex      = 0;
 let heroQueue      = [];
 let heroIntervalId = null;
@@ -162,9 +169,15 @@ function renderNavUser() {
   if (!container) return;
   if (isLoggedIn()) {
     const inicial = currentUser.nombre.charAt(0).toUpperCase();
+    // Pequeña corona dorada en el avatar si es admin
+    const crownBadge = isAdmin()
+      ? `<span title="Administrador" style="position:absolute;top:-4px;right:-4px;font-size:.6rem;line-height:1">👑</span>`
+      : '';
     container.innerHTML = `
       <button class="nav__user-btn" id="navUserBtn" aria-label="Menú de usuario">
-        <div class="nav__user-avatar">${inicial}</div>
+        <div class="nav__user-avatar" style="position:relative">
+          ${inicial}${crownBadge}
+        </div>
         <span>${currentUser.nombre.split(' ')[0]}</span>
       </button>`;
     document.getElementById('navUserBtn')?.addEventListener('click', () => {
@@ -177,17 +190,22 @@ function renderNavUser() {
   }
   refreshCursorTargets();
 }
+
 function renderSidebarUser() {
   const area = document.getElementById('sidebarUserArea');
   if (!area) return;
   if (isLoggedIn()) {
-    const inicial = currentUser.nombre.charAt(0).toUpperCase();
+    const inicial  = currentUser.nombre.charAt(0).toUpperCase();
+    const adminTag = isAdmin()
+      ? `<span style="display:inline-block;margin-top:.3rem;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;background:rgba(200,169,110,.15);border:1px solid var(--gold-dim);color:var(--gold);padding:.15rem .5rem;border-radius:4px;">👑 Admin</span>`
+      : '';
     area.innerHTML = `
       <div class="sidebar__user-info">
         <div class="sidebar__avatar">${inicial}</div>
         <div>
           <div class="sidebar__user-name">${esc(currentUser.nombre)}</div>
           <div class="sidebar__user-email">${esc(currentUser.email)}</div>
+          ${adminTag}
         </div>
       </div>
       <button class="sidebar__logout" id="btnLogout">Cerrar sesión</button>`;
@@ -206,7 +224,16 @@ function renderSidebarUser() {
   }
   refreshCursorTargets();
 }
-function updateAuthUI() { renderNavUser(); renderSidebarUser(); }
+
+function updateAuthUI() {
+  renderNavUser();
+  renderSidebarUser();
+  // Muestra u oculta la sección "Gestión" del sidebar según si es admin
+  const gestionSection = document.getElementById('sidebarGestion');
+  if (gestionSection) {
+    gestionSection.style.display = isAdmin() ? '' : 'none';
+  }
+}
 
 async function handleLoginSuccess(usuario) {
   saveSession(usuario);
@@ -214,7 +241,10 @@ async function handleLoginSuccess(usuario) {
   updateAuthUI();
   await cargarFavoritosDesdeAPI();
   aplicarFiltro(generoActivo, false);
-  showToast(`Bienvenido, ${usuario.nombre.split(' ')[0]}.`, 'success');
+  const bienvenida = isAdmin()
+    ? `Bienvenido de nuevo, ${usuario.nombre.split(' ')[0]}. 👑`
+    : `Bienvenido, ${usuario.nombre.split(' ')[0]}.`;
+  showToast(bienvenida, 'success');
 }
 function handleLogout() {
   clearSession();
@@ -366,6 +396,12 @@ function initSidebar() {
       document.querySelector('.catalog')?.scrollIntoView({ behavior:'smooth', block:'start' });
     });
   });
+  sidebar.querySelectorAll('[data-genero]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault(); aplicarFiltro(link.dataset.genero); close();
+      document.querySelector('.catalog')?.scrollIntoView({ behavior:'smooth', block:'start' });
+    });
+  });
 }
 
 /* ═════════════════════════════════════
@@ -416,7 +452,7 @@ function fillMarquee(peliculas) {
 }
 
 /* ═════════════════════════════════════
-   HERO — actualiza el contenido visible
+   HERO
 ═════════════════════════════════════ */
 function updateHero(pelicula) {
   if (!pelicula) return;
@@ -442,39 +478,21 @@ function updateHero(pelicula) {
 
 /* ═════════════════════════════════════
    HERO ROTATION
-   ─────────────────────────────────────
-   heroFadeTransition(p)
-     Anima la salida del contenido + fondos (fade + slide),
-     actualiza los datos en el punto más oscuro,
-     y anima la entrada. Solo toca el hero, nunca el catálogo.
-
-   advanceHero()
-     Avanza al siguiente índice y llama a heroFadeTransition.
-     También lo llaman los dots cuando el usuario hace clic.
-
-   startHeroRotation(peliculas)
-     Inicializa la cola aleatoria y arranca el setInterval.
 ═════════════════════════════════════ */
 function heroFadeTransition(pelicula) {
   const content = document.querySelector('.hero__content');
   const bgImg   = document.getElementById('heroBgImg');
   const bgRgb   = document.getElementById('heroBgRgb');
   if (!content) { updateHero(pelicula); return; }
-
-  // — SALIDA: fade-out + ligero deslizamiento hacia abajo —
   content.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
   content.style.opacity    = '0';
   content.style.transform  = 'translateY(12px)';
   if (bgImg) { bgImg.style.transition = 'opacity 0.6s ease'; bgImg.style.opacity = '0'; }
   if (bgRgb) { bgRgb.style.transition = 'opacity 0.6s ease'; bgRgb.style.opacity = '0'; }
-
   setTimeout(() => {
-    // — actualización de datos mientras todo es invisible —
     updateHero(pelicula);
-
-    // — ENTRADA: fade-in + slide-up desde abajo —
     if (bgImg) bgImg.style.opacity = '1';
-    if (bgRgb) bgRgb.style.opacity = '0.25';   // valor base del CSS original
+    if (bgRgb) bgRgb.style.opacity = '0.25';
     content.style.transition = 'opacity 0.65s ease, transform 0.65s cubic-bezier(0.16,1,0.3,1)';
     content.style.opacity    = '1';
     content.style.transform  = 'translateY(0)';
@@ -490,57 +508,36 @@ function advanceHero() {
 
 function startHeroRotation(peliculas) {
   if (heroIntervalId) clearInterval(heroIntervalId);
-
-  // Cola aleatoria con todas las películas
   heroQueue = [...peliculas].sort(() => Math.random() - 0.5);
   heroIndex = 0;
-
-  // Primera película: sin animación, la app ya carga el hero con updateHero
   updateHero(heroQueue[0]);
   renderHeroDots();
-
   heroIntervalId = setInterval(advanceHero, 10_000);
 }
 
-/* ─── DOTS DE NAVEGACIÓN ────────────
-   Pequeños puntos en la base del hero que muestran
-   la película activa y permiten saltar manualmente.
-   Se limitan a los primeros HERO_DOT_MAX para no saturar.
-──────────────────────────────────── */
+/* ─── DOTS DE NAVEGACIÓN ─────────── */
 const HERO_DOT_MAX = 8;
-
 function renderHeroDots() {
   document.getElementById('heroDots')?.remove();
   const hero = document.querySelector('.hero');
   if (!hero || heroQueue.length < 2) return;
-
   const count = Math.min(heroQueue.length, HERO_DOT_MAX);
   const wrap  = document.createElement('div');
-  wrap.id        = 'heroDots';
-  wrap.className = 'hero__dots';
-  wrap.setAttribute('role', 'tablist');
-  wrap.setAttribute('aria-label', 'Navegar entre películas destacadas');
-
+  wrap.id = 'heroDots'; wrap.className = 'hero__dots';
+  wrap.setAttribute('role','tablist'); wrap.setAttribute('aria-label','Navegar entre películas destacadas');
   for (let i = 0; i < count; i++) {
     const dot = document.createElement('button');
     dot.className = 'hero__dot' + (i === 0 ? ' hero__dot--active' : '');
-    dot.setAttribute('role', 'tab');
-    dot.setAttribute('aria-selected', String(i === 0));
-    dot.setAttribute('aria-label', heroQueue[i].titulo);
-    dot.dataset.index = String(i);
+    dot.setAttribute('role','tab'); dot.setAttribute('aria-selected', String(i === 0));
+    dot.setAttribute('aria-label', heroQueue[i].titulo); dot.dataset.index = String(i);
     dot.addEventListener('click', () => {
-      heroIndex = i;
-      heroFadeTransition(heroQueue[heroIndex]);
-      syncHeroDots();
-      // Reinicia el timer para que no salte inmediatamente después del clic
-      clearInterval(heroIntervalId);
-      heroIntervalId = setInterval(advanceHero, 10_000);
+      heroIndex = i; heroFadeTransition(heroQueue[heroIndex]); syncHeroDots();
+      clearInterval(heroIntervalId); heroIntervalId = setInterval(advanceHero, 10_000);
     });
     wrap.appendChild(dot);
   }
   hero.appendChild(wrap);
 }
-
 function syncHeroDots() {
   const visibleIndex = heroIndex % HERO_DOT_MAX;
   document.querySelectorAll('.hero__dot').forEach((dot, i) => {
@@ -579,6 +576,8 @@ function esc(str) {
 
 /* ═════════════════════════════════════
    RENDER CARDS
+   Botones Editar/Borrar → solo isAdmin()
+   Botón Favorito        → cualquier usuario logueado
 ═════════════════════════════════════ */
 function renderPeliculas(peliculas) {
   const contenedor = document.getElementById('contenedorPeliculas');
@@ -598,7 +597,9 @@ function renderPeliculas(peliculas) {
   const editIcon   = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
   const deleteIcon = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14Z"/></svg>`;
   const playIcon   = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-  const adminActions = isLoggedIn() ? `
+
+  // Solo el admin ve los botones de gestión
+  const adminActions = isAdmin() ? `
     <button class="film-card__btn film-card__btn--edit"   data-action="editar"  data-id="ID_PH">${editIcon} Editar</button>
     <button class="film-card__btn film-card__btn--delete" data-action="borrar"  data-id="ID_PH">${deleteIcon}</button>` : '';
 
@@ -661,10 +662,11 @@ document.addEventListener('click', e => {
 });
 
 /* ═════════════════════════════════════
-   MODAL CONFIRMACIÓN BORRADO (Bootstrap)
+   MODAL CONFIRMACIÓN BORRADO — solo admin
 ═════════════════════════════════════ */
 let pendingDeleteId = null;
 function confirmDeleteMovie(id, title) {
+  if (!isAdmin()) return; // doble seguridad
   pendingDeleteId = id;
   document.getElementById('deleteMovieTitle').textContent = title;
   const modalEl = document.getElementById('confirmDeleteModal');
@@ -679,10 +681,10 @@ document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () 
 });
 
 /* ═════════════════════════════════════
-   BORRAR
+   BORRAR — solo admin
 ═════════════════════════════════════ */
 async function borrarPeliculaConfirmado(id) {
-  if (!isLoggedIn()) { showToast('Inicia sesión para eliminar películas.', 'error'); abrirModal('login'); return; }
+  if (!isAdmin()) { showToast('No tienes permisos para eliminar películas.', 'error'); return; }
   const pelicula = todasLasPeliculas.find(p => p.id === id); if (!pelicula) return;
   try {
     const res = await fetch(`${API_PELI}/${id}`, { method: 'DELETE', headers: { 'ngrok-skip-browser-warning': 'true' } });
@@ -693,10 +695,10 @@ async function borrarPeliculaConfirmado(id) {
 }
 
 /* ═════════════════════════════════════
-   EDITAR
+   EDITAR — solo admin
 ═════════════════════════════════════ */
 function editarPelicula(id) {
-  if (!isLoggedIn()) { showToast('Inicia sesión para editar películas.', 'error'); abrirModal('login'); return; }
+  if (!isAdmin()) { showToast('No tienes permisos para editar películas.', 'error'); return; }
   const pelicula = todasLasPeliculas.find(p => p.id === id); if (!pelicula) return;
   const card = document.querySelector(`.film-card[data-id="${id}"]`); if (!card) return;
   card.dataset.originalHTML = card.innerHTML;
@@ -732,7 +734,7 @@ function cancelarEdicion(id) {
   if (card?.dataset.originalHTML) { card.innerHTML = card.dataset.originalHTML; delete card.dataset.originalHTML; }
 }
 async function guardarEdicion(id) {
-  if (!isLoggedIn()) return;
+  if (!isAdmin()) { showToast('No tienes permisos para editar películas.', 'error'); return; }
   const pelicula = todasLasPeliculas.find(p => p.id === id); if (!pelicula) return;
   const titulo      = document.getElementById(`editTitulo_${id}`)?.value.trim();
   const director    = document.getElementById(`editDirector_${id}`)?.value.trim();
@@ -754,10 +756,10 @@ async function guardarEdicion(id) {
 }
 
 /* ═════════════════════════════════════
-   AÑADIR PELÍCULA
+   AÑADIR PELÍCULA — solo admin
 ═════════════════════════════════════ */
 function mostrarFormularioNuevaPelicula() {
-  if (!isLoggedIn()) { showToast('Inicia sesión para añadir películas.', 'error'); abrirModal('login'); return; }
+  if (!isAdmin()) { showToast('No tienes permisos para añadir películas.', 'error'); return; }
   if (document.querySelector('.film-card--form')) return;
   const contenedor = document.getElementById('contenedorPeliculas'); if (!contenedor) return;
   const formCard = document.createElement('article');
@@ -765,8 +767,8 @@ function mostrarFormularioNuevaPelicula() {
   formCard.innerHTML = `
     <div class="film-card__media"><span class="form-placeholder-img">🎬<br>Nueva película</span></div>
     <div class="film-card__info">
-      <input  class="film-card__input" id="nuevoTitulo"   placeholder="Título *" required>
-      <input  class="film-card__input" id="nuevoDirector" placeholder="Director *" required>
+      <input  class="film-card__input" id="nuevoTitulo"       placeholder="Título *" required>
+      <input  class="film-card__input" id="nuevoDirector"     placeholder="Director *" required>
       <select class="film-card__select" id="nuevoGenero" required>
         <option value="">Género *</option>
         <option value="ACCION">Acción</option><option value="COMEDIA">Comedia</option>
@@ -775,8 +777,8 @@ function mostrarFormularioNuevaPelicula() {
         <option value="AVENTURA">Aventura</option>
       </select>
       <textarea class="film-card__input film-card__textarea" id="nuevoDescripcion" placeholder="Descripción"></textarea>
-      <input  class="film-card__input" id="nuevoImagen" placeholder="URL de la imagen">
-      <input  class="film-card__input" id="nuevoLink"   placeholder="Enlace público (YouTube, etc.)">
+      <input  class="film-card__input" id="nuevoImagen"       placeholder="URL de la imagen">
+      <input  class="film-card__input" id="nuevoLink"         placeholder="Enlace público (YouTube, etc.)">
       <div class="film-card__form-actions">
         <button class="film-card__btn film-card__btn--edit"   id="btnGuardarNueva">✓ Guardar</button>
         <button class="film-card__btn film-card__btn--delete" id="btnCancelarNueva">✕ Cancelar</button>
@@ -789,7 +791,7 @@ function mostrarFormularioNuevaPelicula() {
 }
 function cancelarNuevaPelicula() { document.querySelector('.film-card--form')?.remove(); }
 async function guardarNuevaPelicula() {
-  if (!isLoggedIn()) return;
+  if (!isAdmin()) { showToast('No tienes permisos para añadir películas.', 'error'); return; }
   const titulo      = document.getElementById('nuevoTitulo')?.value.trim();
   const director    = document.getElementById('nuevoDirector')?.value.trim();
   const genero      = document.getElementById('nuevoGenero')?.value;
@@ -855,7 +857,7 @@ function initScrollAnimations() {
 }
 
 /* ═════════════════════════════════════
-   CURTAIN TRANSITION (catálogo)
+   CURTAIN
 ═════════════════════════════════════ */
 function curtainTransition(callback) {
   const curtain = document.getElementById('curtain');
@@ -886,10 +888,7 @@ async function cargarPeliculas() {
     }
     fillMarquee(todasLasPeliculas);
     aplicarFiltro(generoActivo, false);
-
-    // Arranca la rotación del hero (10 s por película, cola aleatoria)
     startHeroRotation(todasLasPeliculas);
-
   } catch (err) {
     console.error('[Cineverse] Error al cargar películas:', err);
     showToast('No se pudo conectar con el servidor.', 'error');
