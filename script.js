@@ -2,9 +2,8 @@
 
 /* ═════════════════════════════════════
    CONSTANTES DE API
-   Ajusta API_BASE con la URL que te da ngrok (sin / al final)
 ═════════════════════════════════════ */
-const API_BASE  = 'https://cineverse-backend-qjbu.onrender.com'; // ← sin / al final
+const API_BASE  = 'https://cineverse-backend-qjbu.onrender.com';
 const API_PELI  = `${API_BASE}/api/peliculas`;
 const API_USERS = `${API_BASE}/api/usuarios`;
 const API_FAVS  = `${API_BASE}/api/favoritos`;
@@ -17,7 +16,16 @@ let generoActivo      = 'todos';
 let destacadasIds     = JSON.parse(localStorage.getItem('cineverse_destacadas') || 'null');
 let currentUser       = null;
 let favoritosSet      = new Set();
-let peliculaDestacada = null;   // ← película que se está mostrando en el hero
+let peliculaDestacada = null;
+
+/* ─── HERO ROTATION ─────────────────
+   heroQueue  : lista aleatoria de películas que se muestran en el hero
+   heroIndex  : índice actual en heroQueue
+   heroIntervalId : referencia al setInterval para poder cancelarlo
+──────────────────────────────────── */
+let heroIndex      = 0;
+let heroQueue      = [];
+let heroIntervalId = null;
 
 /* ═════════════════════════════════════
    HERO BACKDROPS
@@ -72,14 +80,12 @@ function restoreSession() {
   const email  = localStorage.getItem('cv_userEmail');
   if (id && nombre) currentUser = { id: parseInt(id, 10), nombre, email: email || '' };
 }
-
 function saveSession(usuario) {
   currentUser = { id: usuario.id, nombre: usuario.nombre, email: usuario.email || '' };
   localStorage.setItem('cv_userId',    String(usuario.id));
   localStorage.setItem('cv_userName',  usuario.nombre);
   localStorage.setItem('cv_userEmail', usuario.email || '');
 }
-
 function clearSession() {
   currentUser = null;
   favoritosSet.clear();
@@ -87,11 +93,10 @@ function clearSession() {
   localStorage.removeItem('cv_userName');
   localStorage.removeItem('cv_userEmail');
 }
-
 function isLoggedIn() { return currentUser !== null; }
 
 /* ═════════════════════════════════════
-   AUTH — API (con header para ngrok)
+   AUTH — API
 ═════════════════════════════════════ */
 async function apiLogin(email, password) {
   const res = await fetch(`${API_USERS}/login`, {
@@ -99,56 +104,37 @@ async function apiLogin(email, password) {
     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
     body: JSON.stringify({ email, password })
   });
-  if (!res.ok) {
-    const msg = await res.text().catch(() => 'Error de servidor');
-    throw new Error(msg || 'Email o contraseña incorrectos');
-  }
+  if (!res.ok) { const msg = await res.text().catch(() => 'Error de servidor'); throw new Error(msg || 'Email o contraseña incorrectos'); }
   return res.json();
 }
-
 async function apiRegistro(nombre, email, password) {
   const res = await fetch(`${API_USERS}/registro`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
     body: JSON.stringify({ nombre, email, password })
   });
-  if (!res.ok) {
-    const msg = await res.text().catch(() => 'Error de servidor');
-    throw new Error(msg || 'No se pudo registrar');
-  }
+  if (!res.ok) { const msg = await res.text().catch(() => 'Error de servidor'); throw new Error(msg || 'No se pudo registrar'); }
   return res.json();
 }
 
 /* ═════════════════════════════════════
-   FAVORITOS — API
+   FAVORITOS
 ═════════════════════════════════════ */
 async function cargarFavoritosDesdeAPI() {
   if (!isLoggedIn()) { favoritosSet.clear(); return; }
   try {
-    const res = await fetch(`${API_FAVS}/usuario/${currentUser.id}`, {
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    });
+    const res = await fetch(`${API_FAVS}/usuario/${currentUser.id}`, { headers: { 'ngrok-skip-browser-warning': 'true' } });
     if (!res.ok) return;
     const lista = await res.json();
     favoritosSet = new Set(lista.map(f => f.peliculaId));
-  } catch (err) {
-    console.warn('[Cineverse] No se pudieron cargar favoritos:', err);
-  }
+  } catch (err) { console.warn('[Cineverse] No se pudieron cargar favoritos:', err); }
 }
-
 async function toggleFavorito(peliculaId) {
-  if (!isLoggedIn()) {
-    showToast('Inicia sesión para guardar favoritos.', 'error');
-    abrirModal('login');
-    return;
-  }
+  if (!isLoggedIn()) { showToast('Inicia sesión para guardar favoritos.', 'error'); abrirModal('login'); return; }
   const esFav = favoritosSet.has(peliculaId);
   try {
     if (esFav) {
-      const res = await fetch(`${API_FAVS}/${currentUser.id}/${peliculaId}`, {
-        method: 'DELETE',
-        headers: { 'ngrok-skip-browser-warning': 'true' }
-      });
+      const res = await fetch(`${API_FAVS}/${currentUser.id}/${peliculaId}`, { method: 'DELETE', headers: { 'ngrok-skip-browser-warning': 'true' } });
       if (!res.ok && res.status !== 404) throw new Error();
       favoritosSet.delete(peliculaId);
     } else {
@@ -161,24 +147,15 @@ async function toggleFavorito(peliculaId) {
       favoritosSet.add(peliculaId);
     }
     aplicarFiltro(generoActivo, false);
-  } catch {
-    showToast('Error al actualizar favoritos.', 'error');
-  }
+  } catch { showToast('Error al actualizar favoritos.', 'error'); }
 }
-
-/* ═════════════════════════════════════
-   BOTÓN "MI LISTA" DEL HERO
-═════════════════════════════════════ */
 function agregarDestacadaAFavoritos() {
-  if (!peliculaDestacada) {
-    showToast('No hay película destacada en este momento.', 'error');
-    return;
-  }
+  if (!peliculaDestacada) { showToast('No hay película destacada en este momento.', 'error'); return; }
   toggleFavorito(peliculaDestacada.id);
 }
 
 /* ═════════════════════════════════════
-   UI — BOTÓN USUARIO NAVBAR
+   UI — NAVBAR / SIDEBAR
 ═════════════════════════════════════ */
 function renderNavUser() {
   const container = document.getElementById('navUser');
@@ -200,10 +177,6 @@ function renderNavUser() {
   }
   refreshCursorTargets();
 }
-
-/* ═════════════════════════════════════
-   UI — ZONA USUARIO SIDEBAR
-═════════════════════════════════════ */
 function renderSidebarUser() {
   const area = document.getElementById('sidebarUserArea');
   if (!area) return;
@@ -233,12 +206,8 @@ function renderSidebarUser() {
   }
   refreshCursorTargets();
 }
-
 function updateAuthUI() { renderNavUser(); renderSidebarUser(); }
 
-/* ═════════════════════════════════════
-   ACCIONES AUTH
-═════════════════════════════════════ */
 async function handleLoginSuccess(usuario) {
   saveSession(usuario);
   cerrarModal();
@@ -247,7 +216,6 @@ async function handleLoginSuccess(usuario) {
   aplicarFiltro(generoActivo, false);
   showToast(`Bienvenido, ${usuario.nombre.split(' ')[0]}.`, 'success');
 }
-
 function handleLogout() {
   clearSession();
   updateAuthUI();
@@ -267,7 +235,6 @@ function abrirModal(tab = 'login') {
   switchModalTab(tab);
   setTimeout(() => modal.querySelector('.modal__input')?.focus(), 80);
 }
-
 function cerrarModal() {
   const modal = document.getElementById('authModal');
   if (!modal) return;
@@ -276,29 +243,22 @@ function cerrarModal() {
   document.body.style.overflow = '';
   limpiarErroresModal();
 }
-
 function switchModalTab(tab) {
-  const pl = document.getElementById('panelLogin');
-  const pr = document.getElementById('panelRegistro');
-  const tl = document.getElementById('tabLogin');
-  const tr = document.getElementById('tabReg');
+  const pl = document.getElementById('panelLogin'), pr = document.getElementById('panelRegistro');
+  const tl = document.getElementById('tabLogin'),   tr = document.getElementById('tabReg');
   if (tab === 'login') {
     pl?.classList.remove('hidden'); pr?.classList.add('hidden');
-    tl?.classList.add('active'); tr?.classList.remove('active');
-    tl?.setAttribute('aria-selected', 'true'); tr?.setAttribute('aria-selected', 'false');
+    tl?.classList.add('active');    tr?.classList.remove('active');
   } else {
-    pl?.classList.add('hidden'); pr?.classList.remove('hidden');
+    pl?.classList.add('hidden');    pr?.classList.remove('hidden');
     tl?.classList.remove('active'); tr?.classList.add('active');
-    tl?.setAttribute('aria-selected', 'false'); tr?.setAttribute('aria-selected', 'true');
   }
   limpiarErroresModal();
 }
-
 function limpiarErroresModal() {
   ['loginError','regError'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = ''; });
   document.querySelectorAll('.modal__input').forEach(i => i.classList.remove('error'));
 }
-
 function initAuthModal() {
   const modal = document.getElementById('authModal');
   if (!modal) return;
@@ -308,7 +268,6 @@ function initAuthModal() {
   modal.querySelectorAll('.modal__tab').forEach(t => t.addEventListener('click', () => switchModalTab(t.dataset.tab)));
   modal.querySelectorAll('.modal__switch-btn').forEach(b => b.addEventListener('click', () => switchModalTab(b.dataset.switch)));
 
-  /* LOGIN */
   document.getElementById('btnLogin')?.addEventListener('click', async () => {
     const email = document.getElementById('loginEmail')?.value.trim();
     const pass  = document.getElementById('loginPassword')?.value;
@@ -330,7 +289,6 @@ function initAuthModal() {
   ['loginEmail','loginPassword'].forEach(id =>
     document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btnLogin')?.click(); }));
 
-  /* REGISTRO */
   document.getElementById('btnRegistro')?.addEventListener('click', async () => {
     const nombre = document.getElementById('regNombre')?.value.trim();
     const email  = document.getElementById('regEmail')?.value.trim();
@@ -355,12 +313,11 @@ function initAuthModal() {
 }
 
 /* ═════════════════════════════════════
-   CURSOR PERSONALIZADO
+   CURSOR
 ═════════════════════════════════════ */
 const cursorDot  = document.getElementById('cursorDot');
 const cursorRing = document.getElementById('cursorRing');
 let mouseX = 0, mouseY = 0, ringX = 0, ringY = 0;
-
 document.addEventListener('mousemove', e => {
   mouseX = e.clientX; mouseY = e.clientY;
   if (cursorDot) { cursorDot.style.left = mouseX + 'px'; cursorDot.style.top = mouseY + 'px'; }
@@ -370,10 +327,8 @@ document.addEventListener('mousemove', e => {
   if (cursorRing) { cursorRing.style.left = ringX + 'px'; cursorRing.style.top = ringY + 'px'; }
   requestAnimationFrame(tickCursor);
 })();
-
 function onCursorEnter() { document.body.classList.add('cursor-hover'); }
 function onCursorLeave() { document.body.classList.remove('cursor-hover'); }
-
 function refreshCursorTargets() {
   document.querySelectorAll('a, button, .film-card, .filter-pill, .nav__dropdown-item').forEach(el => {
     el.removeEventListener('mouseenter', onCursorEnter);
@@ -461,11 +416,11 @@ function fillMarquee(peliculas) {
 }
 
 /* ═════════════════════════════════════
-   HERO  (actualiza también peliculaDestacada)
+   HERO — actualiza el contenido visible
 ═════════════════════════════════════ */
 function updateHero(pelicula) {
   if (!pelicula) return;
-  peliculaDestacada = pelicula;   // ← guardamos la película actual del hero
+  peliculaDestacada = pelicula;
   const $ = id => document.getElementById(id);
   const heroImg = getHeroBackdrop(pelicula);
   const bgImg = $('heroBgImg'), bgRgb = $('heroBgRgb');
@@ -476,17 +431,123 @@ function updateHero(pelicula) {
   const desc = $('heroDescripcion'); if (desc) desc.textContent = pelicula.descripcion || '';
   const genre = $('heroGenre'); if (genre) genre.textContent = (pelicula.genero ?? '—').replaceAll('_',' ');
   const director = $('heroDirector'); if (director) director.textContent = pelicula.director ?? '—';
-
-  // Botón "Ver ahora" redirige al link si existe
   const playBtn = $('heroPlayBtn');
   if (playBtn) {
     playBtn.onclick = null;
-    if (pelicula.link) {
-      playBtn.onclick = () => window.open(pelicula.link, '_blank');
-    } else {
-      playBtn.onclick = () => showToast('No hay enlace disponible.', 'info');
-    }
+    playBtn.onclick = pelicula.link
+      ? () => window.open(pelicula.link, '_blank')
+      : () => showToast('No hay enlace disponible.', 'info');
   }
+}
+
+/* ═════════════════════════════════════
+   HERO ROTATION
+   ─────────────────────────────────────
+   heroFadeTransition(p)
+     Anima la salida del contenido + fondos (fade + slide),
+     actualiza los datos en el punto más oscuro,
+     y anima la entrada. Solo toca el hero, nunca el catálogo.
+
+   advanceHero()
+     Avanza al siguiente índice y llama a heroFadeTransition.
+     También lo llaman los dots cuando el usuario hace clic.
+
+   startHeroRotation(peliculas)
+     Inicializa la cola aleatoria y arranca el setInterval.
+═════════════════════════════════════ */
+function heroFadeTransition(pelicula) {
+  const content = document.querySelector('.hero__content');
+  const bgImg   = document.getElementById('heroBgImg');
+  const bgRgb   = document.getElementById('heroBgRgb');
+  if (!content) { updateHero(pelicula); return; }
+
+  // — SALIDA: fade-out + ligero deslizamiento hacia abajo —
+  content.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  content.style.opacity    = '0';
+  content.style.transform  = 'translateY(12px)';
+  if (bgImg) { bgImg.style.transition = 'opacity 0.6s ease'; bgImg.style.opacity = '0'; }
+  if (bgRgb) { bgRgb.style.transition = 'opacity 0.6s ease'; bgRgb.style.opacity = '0'; }
+
+  setTimeout(() => {
+    // — actualización de datos mientras todo es invisible —
+    updateHero(pelicula);
+
+    // — ENTRADA: fade-in + slide-up desde abajo —
+    if (bgImg) bgImg.style.opacity = '1';
+    if (bgRgb) bgRgb.style.opacity = '0.25';   // valor base del CSS original
+    content.style.transition = 'opacity 0.65s ease, transform 0.65s cubic-bezier(0.16,1,0.3,1)';
+    content.style.opacity    = '1';
+    content.style.transform  = 'translateY(0)';
+  }, 520);
+}
+
+function advanceHero() {
+  if (!heroQueue.length) return;
+  heroIndex = (heroIndex + 1) % heroQueue.length;
+  heroFadeTransition(heroQueue[heroIndex]);
+  syncHeroDots();
+}
+
+function startHeroRotation(peliculas) {
+  if (heroIntervalId) clearInterval(heroIntervalId);
+
+  // Cola aleatoria con todas las películas
+  heroQueue = [...peliculas].sort(() => Math.random() - 0.5);
+  heroIndex = 0;
+
+  // Primera película: sin animación, la app ya carga el hero con updateHero
+  updateHero(heroQueue[0]);
+  renderHeroDots();
+
+  heroIntervalId = setInterval(advanceHero, 10_000);
+}
+
+/* ─── DOTS DE NAVEGACIÓN ────────────
+   Pequeños puntos en la base del hero que muestran
+   la película activa y permiten saltar manualmente.
+   Se limitan a los primeros HERO_DOT_MAX para no saturar.
+──────────────────────────────────── */
+const HERO_DOT_MAX = 8;
+
+function renderHeroDots() {
+  document.getElementById('heroDots')?.remove();
+  const hero = document.querySelector('.hero');
+  if (!hero || heroQueue.length < 2) return;
+
+  const count = Math.min(heroQueue.length, HERO_DOT_MAX);
+  const wrap  = document.createElement('div');
+  wrap.id        = 'heroDots';
+  wrap.className = 'hero__dots';
+  wrap.setAttribute('role', 'tablist');
+  wrap.setAttribute('aria-label', 'Navegar entre películas destacadas');
+
+  for (let i = 0; i < count; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'hero__dot' + (i === 0 ? ' hero__dot--active' : '');
+    dot.setAttribute('role', 'tab');
+    dot.setAttribute('aria-selected', String(i === 0));
+    dot.setAttribute('aria-label', heroQueue[i].titulo);
+    dot.dataset.index = String(i);
+    dot.addEventListener('click', () => {
+      heroIndex = i;
+      heroFadeTransition(heroQueue[heroIndex]);
+      syncHeroDots();
+      // Reinicia el timer para que no salte inmediatamente después del clic
+      clearInterval(heroIntervalId);
+      heroIntervalId = setInterval(advanceHero, 10_000);
+    });
+    wrap.appendChild(dot);
+  }
+  hero.appendChild(wrap);
+}
+
+function syncHeroDots() {
+  const visibleIndex = heroIndex % HERO_DOT_MAX;
+  document.querySelectorAll('.hero__dot').forEach((dot, i) => {
+    const active = i === visibleIndex;
+    dot.classList.toggle('hero__dot--active', active);
+    dot.setAttribute('aria-selected', String(active));
+  });
 }
 
 /* ═════════════════════════════════════
@@ -511,15 +572,13 @@ function mostrarSkeletons(n = 8) {
 function esc(str) {
   if (str == null) return '';
   return String(str)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;').replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
 
 /* ═════════════════════════════════════
-   RENDER CARDS  (con enlace en el icono de play)
+   RENDER CARDS
 ═════════════════════════════════════ */
 function renderPeliculas(peliculas) {
   const contenedor = document.getElementById('contenedorPeliculas');
@@ -550,18 +609,15 @@ function renderPeliculas(peliculas) {
     const isFav       = favoritosSet.has(p.id);
     const anio        = p.anio ? `<span class="film-card__year">${esc(String(p.anio))}</span>` : '';
     const actions     = adminActions.replaceAll('ID_PH', String(p.id));
-
-    // Construir el icono de play como enlace si hay link, si no como simple div
-    const playButton = p.link
+    const playButton  = p.link
       ? `<a href="${esc(p.link)}" target="_blank" rel="noopener" class="film-card__play" aria-label="Reproducir ${safeTitulo}">${playIcon}</a>`
       : `<div class="film-card__play" aria-hidden="true">${playIcon}</div>`;
-
     return `
     <article class="film-card" data-id="${esc(String(p.id))}" aria-label="${safeTitulo}">
       <div class="film-card__media">
         <span class="film-card__num" aria-hidden="true">№ ${String(i+1).padStart(2,'0')}</span>
         <img src="${esc(imagenUrl)}" alt="Póster de ${safeTitulo}" loading="lazy" class="film-card__img"
-             onerror="this.src='${placeholder}';this.onerror=null;">
+             data-placeholder="${placeholder}" onerror="this.onerror=null;this.src=this.dataset.placeholder;">
         ${playButton}
       </div>
       <div class="film-card__info">
@@ -588,7 +644,7 @@ function renderPeliculas(peliculas) {
 }
 
 /* ═════════════════════════════════════
-   DELEGACIÓN GLOBAL DE EVENTOS
+   DELEGACIÓN GLOBAL
 ═════════════════════════════════════ */
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
@@ -605,58 +661,31 @@ document.addEventListener('click', e => {
 });
 
 /* ═════════════════════════════════════
-   MODAL DE CONFIRMACIÓN (Bootstrap)
+   MODAL CONFIRMACIÓN BORRADO (Bootstrap)
 ═════════════════════════════════════ */
 let pendingDeleteId = null;
-
 function confirmDeleteMovie(id, title) {
   pendingDeleteId = id;
   document.getElementById('deleteMovieTitle').textContent = title;
   const modalEl = document.getElementById('confirmDeleteModal');
-  const modal = new bootstrap.Modal(modalEl);
-  modal.show();
+  new bootstrap.Modal(modalEl).show();
 }
-
-// Botón confirmar del modal
 document.getElementById('confirmDeleteBtn')?.addEventListener('click', async () => {
   if (pendingDeleteId !== null) {
     await borrarPeliculaConfirmado(pendingDeleteId);
     pendingDeleteId = null;
-    const modalEl = document.getElementById('confirmDeleteModal');
-    bootstrap.Modal.getInstance(modalEl)?.hide();
+    bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'))?.hide();
   }
 });
 
 /* ═════════════════════════════════════
-   BORRAR (eliminación real)
+   BORRAR
 ═════════════════════════════════════ */
 async function borrarPeliculaConfirmado(id) {
   if (!isLoggedIn()) { showToast('Inicia sesión para eliminar películas.', 'error'); abrirModal('login'); return; }
-  const pelicula = todasLasPeliculas.find(p => p.id === id);
-  if (!pelicula) return;
-  try {
-    const res = await fetch(`${API_PELI}/${id}`, {
-      method: 'DELETE',
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    });
-    if (!res.ok) throw new Error();
-    showToast(`"${pelicula.titulo}" eliminada.`, 'success');
-    cargarPeliculas();
-  } catch {
-    showToast('Error al eliminar la película.', 'error');
-  }
-}
-
-// Función original de borrado (ya no se usa, pero se conserva por si acaso)
-async function borrarPelicula(id) {
-  if (!isLoggedIn()) { showToast('Inicia sesión para eliminar películas.', 'error'); abrirModal('login'); return; }
   const pelicula = todasLasPeliculas.find(p => p.id === id); if (!pelicula) return;
-  if (!confirm(`¿Eliminar "${pelicula.titulo}" de forma permanente?\nEsta acción no se puede deshacer.`)) return;
   try {
-    const res = await fetch(`${API_PELI}/${id}`, {
-      method: 'DELETE',
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    });
+    const res = await fetch(`${API_PELI}/${id}`, { method: 'DELETE', headers: { 'ngrok-skip-browser-warning': 'true' } });
     if (!res.ok) throw new Error();
     showToast(`"${pelicula.titulo}" eliminada.`, 'success');
     cargarPeliculas();
@@ -664,7 +693,7 @@ async function borrarPelicula(id) {
 }
 
 /* ═════════════════════════════════════
-   EDITAR (con header ngrok)
+   EDITAR
 ═════════════════════════════════════ */
 function editarPelicula(id) {
   if (!isLoggedIn()) { showToast('Inicia sesión para editar películas.', 'error'); abrirModal('login'); return; }
@@ -675,7 +704,7 @@ function editarPelicula(id) {
   card.innerHTML = `
     <div class="film-card__media">
       <img src="${esc(pelicula.imagen)||ph}" alt="" class="film-card__img" style="opacity:.55"
-           onerror="this.src='${ph}';this.onerror=null;">
+           data-placeholder="${ph}" onerror="this.onerror=null;this.src=this.dataset.placeholder;">
     </div>
     <div class="film-card__info">
       <input  class="film-card__input"  id="editTitulo_${id}"      value="${esc(pelicula.titulo)}"      placeholder="Título *">
@@ -698,12 +727,10 @@ function editarPelicula(id) {
   const sel = document.getElementById(`editGenero_${id}`);
   if (sel) sel.value = pelicula.genero || '';
 }
-
 function cancelarEdicion(id) {
   const card = document.querySelector(`.film-card[data-id="${id}"]`);
   if (card?.dataset.originalHTML) { card.innerHTML = card.dataset.originalHTML; delete card.dataset.originalHTML; }
 }
-
 async function guardarEdicion(id) {
   if (!isLoggedIn()) return;
   const pelicula = todasLasPeliculas.find(p => p.id === id); if (!pelicula) return;
@@ -727,7 +754,7 @@ async function guardarEdicion(id) {
 }
 
 /* ═════════════════════════════════════
-   AÑADIR  (ahora incluye campo link)
+   AÑADIR PELÍCULA
 ═════════════════════════════════════ */
 function mostrarFormularioNuevaPelicula() {
   if (!isLoggedIn()) { showToast('Inicia sesión para añadir películas.', 'error'); abrirModal('login'); return; }
@@ -738,8 +765,8 @@ function mostrarFormularioNuevaPelicula() {
   formCard.innerHTML = `
     <div class="film-card__media"><span class="form-placeholder-img">🎬<br>Nueva película</span></div>
     <div class="film-card__info">
-      <input  class="film-card__input" id="nuevoTitulo"      placeholder="Título *" required>
-      <input  class="film-card__input" id="nuevoDirector"    placeholder="Director *" required>
+      <input  class="film-card__input" id="nuevoTitulo"   placeholder="Título *" required>
+      <input  class="film-card__input" id="nuevoDirector" placeholder="Director *" required>
       <select class="film-card__select" id="nuevoGenero" required>
         <option value="">Género *</option>
         <option value="ACCION">Acción</option><option value="COMEDIA">Comedia</option>
@@ -760,9 +787,7 @@ function mostrarFormularioNuevaPelicula() {
   document.getElementById('btnCancelarNueva')?.addEventListener('click', cancelarNuevaPelicula);
   setTimeout(() => document.getElementById('nuevoTitulo')?.focus(), 80);
 }
-
 function cancelarNuevaPelicula() { document.querySelector('.film-card--form')?.remove(); }
-
 async function guardarNuevaPelicula() {
   if (!isLoggedIn()) return;
   const titulo      = document.getElementById('nuevoTitulo')?.value.trim();
@@ -820,7 +845,6 @@ function animateCardsIn() {
   if (typeof gsap !== 'undefined')
     gsap.fromTo('.film-card', { opacity: 0, y: 32 }, { opacity: 1, y: 0, duration: 0.55, stagger: 0.055, ease: 'power3.out' });
 }
-
 function initScrollAnimations() {
   if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
   gsap.registerPlugin(ScrollTrigger);
@@ -831,7 +855,7 @@ function initScrollAnimations() {
 }
 
 /* ═════════════════════════════════════
-   CURTAIN TRANSITION
+   CURTAIN TRANSITION (catálogo)
 ═════════════════════════════════════ */
 function curtainTransition(callback) {
   const curtain = document.getElementById('curtain');
@@ -847,14 +871,12 @@ function curtainTransition(callback) {
 }
 
 /* ═════════════════════════════════════
-   CARGA DE PELÍCULAS (con header ngrok)
+   CARGA DE PELÍCULAS
 ═════════════════════════════════════ */
 async function cargarPeliculas() {
   mostrarSkeletons();
   try {
-    const res = await fetch(API_PELI, {
-      headers: { 'ngrok-skip-browser-warning': 'true' }
-    });
+    const res = await fetch(API_PELI, { headers: { 'ngrok-skip-browser-warning': 'true' } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     todasLasPeliculas = await res.json();
     if (!destacadasIds || !Array.isArray(destacadasIds)) {
@@ -862,10 +884,12 @@ async function cargarPeliculas() {
       destacadasIds = shuffled.slice(0, 5).map(p => p.id);
       localStorage.setItem('cineverse_destacadas', JSON.stringify(destacadasIds));
     }
-    const featured = todasLasPeliculas[Math.floor(Math.random() * todasLasPeliculas.length)];
-    updateHero(featured);
     fillMarquee(todasLasPeliculas);
     aplicarFiltro(generoActivo, false);
+
+    // Arranca la rotación del hero (10 s por película, cola aleatoria)
+    startHeroRotation(todasLasPeliculas);
+
   } catch (err) {
     console.error('[Cineverse] Error al cargar películas:', err);
     showToast('No se pudo conectar con el servidor.', 'error');
@@ -874,7 +898,7 @@ async function cargarPeliculas() {
 }
 
 /* ═════════════════════════════════════
-   BÚSQUEDA
+   BÚSQUEDA Y FILTRO
 ═════════════════════════════════════ */
 function buscar(q) {
   q = q.trim().toLowerCase();
@@ -884,18 +908,13 @@ function buscar(q) {
     p.genero?.toLowerCase().includes(q) || p.descripcion?.toLowerCase().includes(q)
   ));
 }
-
-/* ═════════════════════════════════════
-   FILTRO
-═════════════════════════════════════ */
 function aplicarFiltro(genero, animate = true) {
   generoActivo = genero;
   let filtradas;
-  if (genero === 'destacadas')      filtradas = todasLasPeliculas.filter(p => destacadasIds?.includes(p.id));
-  else if (genero === 'favoritas')  filtradas = todasLasPeliculas.filter(p => favoritosSet.has(p.id));
-  else if (genero === 'todos')      filtradas = todasLasPeliculas;
+  if (genero === 'destacadas')     filtradas = todasLasPeliculas.filter(p => destacadasIds?.includes(p.id));
+  else if (genero === 'favoritas') filtradas = todasLasPeliculas.filter(p => favoritosSet.has(p.id));
+  else if (genero === 'todos')     filtradas = todasLasPeliculas;
   else filtradas = todasLasPeliculas.filter(p => p.genero?.toLowerCase().trim() === genero.toLowerCase().trim());
-
   const updateUI = () => {
     renderPeliculas(filtradas);
     document.querySelectorAll('.filter-pill').forEach(b => {
@@ -924,21 +943,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelectorAll('.filter-pill').forEach(pill =>
     pill.addEventListener('click', () => aplicarFiltro(pill.dataset.genero)));
-
   document.querySelectorAll('.nav__link[data-filter]').forEach(link => {
     link.addEventListener('click', e => {
       e.preventDefault(); aplicarFiltro(link.dataset.filter);
       document.querySelector('.catalog')?.scrollIntoView({ behavior:'smooth', block:'start' });
     });
   });
-
   document.querySelectorAll('.nav__dropdown-item[data-genero]').forEach(item => {
     item.addEventListener('click', e => {
       e.preventDefault(); aplicarFiltro(item.dataset.genero);
       document.querySelector('.catalog')?.scrollIntoView({ behavior:'smooth', block:'start' });
     });
   });
-
   document.getElementById('btnAgregarPelicula')?.addEventListener('click', e => {
     e.preventDefault();
     document.getElementById('sidebar')?.classList.remove('sidebar--open');
@@ -946,8 +962,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     mostrarFormularioNuevaPelicula();
     document.querySelector('.catalog')?.scrollIntoView({ behavior:'smooth', block:'start' });
   });
-
-  // Botón "Mi lista" del hero
   document.getElementById('btnMiLista')?.addEventListener('click', agregarDestacadaAFavoritos);
 
   let searchTid;
